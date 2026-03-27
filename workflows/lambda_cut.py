@@ -1084,11 +1084,14 @@ Type /confirm_update to proceed.""")
             result = perform_update(script_root)
             if result.get("success"):
                 tg_send(f"✅ {result.get('message')}\n\nRestarting listener...")
+                time.sleep(1)
                 LISTENER_RESTART = True
             else:
                 tg_send(f"❌ {result.get('message')}")
         
-        threading.Thread(target=_update, daemon=True).start()
+        t = threading.Thread(target=_update)
+        t.start()
+        t.join()  # Wait for update to complete before continuing
 
     else:
         tg_send("Unknown command. Use /help for available commands.")
