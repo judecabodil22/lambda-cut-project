@@ -2,6 +2,26 @@
 
 All notable changes to this project documented here.
 
+## 2.5.2 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Update target path | Fixed `script_root` to use project root instead of `workflows/` subdirectory |
+| Listener restart | Fixed `os.execv` call to work reliably with 1-second delay |
+| Help text | Added `/run_local` command to help display |
+
+### New Features
+
+| Feature | Details |
+|---------|---------|
+| `/run_local` command | Process local recordings instead of YouTube |
+| Recording support | Supports .mp4, .mkv, .webm, .avi, .mov formats |
+| Pipeline integration | Full pipeline runs on local recordings |
+
+---
+
 ## 2.5.1 — 2026-03-28
 
 ### Update System Fix
