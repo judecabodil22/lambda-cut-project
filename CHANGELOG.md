@@ -2,6 +2,23 @@
 
 All notable changes to this project documented here.
 
+## 2.5.5 — 2026-03-28
+
+### Features
+
+| Feature | Details |
+|---------|---------|
+| `/restart_listener` command | Restart listener via Telegram (same mechanism as update restart) |
+| systemd `Restart=always` | Listener auto-restarts after any exit (crash, stop, or restart) |
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Listener restart | Fixed restart by waiting for update thread to complete before checking flag |
+
+---
+
 ## 2.5.4 — 2026-03-28
 
 ### Bug Fixes

@@ -1003,17 +1003,17 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 /version    - Show current version
 /update     - Check for and install updates
 
-/stop_listener   - Stop the listener
+/restart_listener - Restart the listener
 /stop_pipeline   - Stop running pipeline
 /delete_partial  - Delete incomplete files
 /cleanup         - Delete all generated files
 
 /help - This message""")
 
-    elif cmd in ("/stop_listener", "/stop"):
-        global LISTENER_RUNNING
-        LISTENER_RUNNING = False
-        tg_send("Stopping listener...")
+    elif cmd in ("/restart_listener", "/restart"):
+        global LISTENER_RESTART
+        tg_send("Restarting listener...")
+        LISTENER_RESTART = True
 
     elif cmd == "/stop_pipeline":
         if PIPELINE_RUNNING:
