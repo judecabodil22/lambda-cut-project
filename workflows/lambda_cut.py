@@ -910,7 +910,7 @@ def process_cmd(text, chat_id):
         pipeline_status = f"Running: {s}" if PIPELINE_RUNNING else f"Idle. Last: {s}" if s else "Idle"
         
         # Get version and update status
-        script_root = os.path.dirname(os.path.abspath(__file__))
+        script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         local_ver = get_local_version(script_root)
         update_info = check_for_updates(script_root)
         update_status = ""
@@ -1039,7 +1039,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
             tg_send("No logs to clear.")
 
     elif cmd == "/version":
-        script_root = os.path.dirname(os.path.abspath(__file__))
+        script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         local_ver = get_local_version(script_root)
         update_info = check_for_updates(script_root)
         remote_ver = update_info.get("remote_version", "Unknown")
@@ -1049,7 +1049,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
             tg_send(f"Current version: v{local_ver}\nLatest version: v{remote_ver or 'Unknown'}\n\nYou're up to date!")
 
     elif cmd == "/update":
-        script_root = os.path.dirname(os.path.abspath(__file__))
+        script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         update_info = check_for_updates(script_root)
         
         if not update_info.get("update_available"):
@@ -1075,14 +1075,15 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 Type /confirm_update to proceed.""")
     
     elif cmd == "/confirm_update":
-        script_root = os.path.dirname(os.path.abspath(__file__))
+        script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         tg_send("Updating... Please wait.")
         
         def _update():
             result = perform_update(script_root)
             if result.get("success"):
                 tg_send(f"✅ {result.get('message')}\n\nRestarting listener...")
-                # Restart listener
+                time.sleep(1)
+                # Restart the process
                 os.execv(sys.executable, [sys.executable] + sys.argv)
             else:
                 tg_send(f"❌ {result.get('message')}")
@@ -1165,7 +1166,7 @@ WantedBy=default.target
     
     # Check for updates
     print("Checking for updates...")
-    script_root = os.path.dirname(script_path)
+    script_root = os.path.dirname(os.path.dirname(script_path))
     update_info = check_for_updates(script_root)
     local_ver = update_info.get("local_version", "Unknown")
     print(f"Version: v{local_ver}")

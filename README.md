@@ -18,6 +18,9 @@ The `.gitignore` file is configured to exclude sensitive files. When cloning thi
 ## What's New in 2.5.1
 
 - **Update system fix** — fixed directory structure issue during updates
+- **Update path fix** — updates now correctly target project root instead of `workflows/` subdirectory
+- **Restart fix** — listener reliably restarts after update
+- **Help text** — added `/run_local` to help display
 - **QA process** — all new features must be tested before deployment
 
 ## What's New in 2.5
