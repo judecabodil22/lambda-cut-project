@@ -2,6 +2,16 @@
 
 All notable changes to this project documented here.
 
+## 2.5.4 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Listener restart | Fixed restart by waiting for update thread to complete before checking flag |
+
+---
+
 ## 2.5.3 — 2026-03-28
 
 ### Bug Fixes
