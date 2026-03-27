@@ -48,6 +48,7 @@ OUTPUT_DIR       = os.path.join(WORKSPACE, "output")
 
 STREAMING = False  # set True when called from listener
 PIPELINE_RUNNING = False
+LISTENER_RESTART = False  # set True when update requires restart
 PIPELINE_STOP_REQUESTED = False  # set True to request pipeline stop
 LISTENER_RUNNING = True  # set False to stop listener
 PID_FILE = "/tmp/lambda_cut_listener.pid"
@@ -1079,12 +1080,11 @@ Type /confirm_update to proceed.""")
         tg_send("Updating... Please wait.")
         
         def _update():
+            global LISTENER_RESTART
             result = perform_update(script_root)
             if result.get("success"):
                 tg_send(f"✅ {result.get('message')}\n\nRestarting listener...")
-                time.sleep(1)
-                # Restart the process
-                os.execv(sys.executable, [sys.executable] + sys.argv)
+                LISTENER_RESTART = True
             else:
                 tg_send(f"❌ {result.get('message')}")
         
@@ -1196,6 +1196,10 @@ WantedBy=default.target
                 if cid == str(chat) and txt:
                     print(f"Received: {txt}")
                     process_cmd(txt, cid)
+                    if LISTENER_RESTART:
+                        tg_send("Restarting listener...")
+                        time.sleep(1)
+                        os.execv(sys.executable, [sys.executable] + sys.argv)
         except urllib.error.URLError:
             time.sleep(5)
         except Exception as e:

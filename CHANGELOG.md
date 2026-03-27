@@ -2,6 +2,16 @@
 
 All notable changes to this project documented here.
 
+## 2.5.3 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Listener restart | Fixed restart by moving os.execv from daemon thread to main polling loop |
+
+---
+
 ## 2.5.2 — 2026-03-28
 
 ### Bug Fixes
