@@ -2,6 +2,33 @@
 
 All notable changes to this project documented here.
 
+## 2.3 — 2026-03-27
+
+### Auto-Update System
+
+| Feature | Details |
+|---------|---------|
+| Update detection | Checks for updates on listener startup, every 24 hours, and on `/status` |
+| GitHub integration | Hybrid approach: VERSION file check (no API) + release notes (on-demand) |
+| Backup system | Automatic backup before update (keeps up to 2 previous versions) |
+| Rollback support | Backups stored in `/backups` directory for manual restore |
+| `/update` command | Check for and install updates via Telegram |
+| `/version` command | Show current version and update status |
+| `/confirm_update` | Confirm update after reviewing release notes |
+| `/status` enhanced | Now shows version and update availability |
+| CLI update | `lambda_cut update` command |
+
+### Security
+
+| Feature | Details |
+|---------|---------|
+| HTTPS only | All downloads use HTTPS |
+| No credentials | No API tokens stored |
+| Official source | Downloads only from GitHub |
+| Backup before update | Rollback if something goes wrong |
+
+---
+
 ## 2.2 — 2026-03-26
 
 ### Listener & Process Management

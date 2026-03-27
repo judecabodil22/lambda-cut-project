@@ -1,4 +1,4 @@
-# Lambda Cut 2.2
+# Lambda Cut 2.3
 
 Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
 
@@ -8,6 +8,15 @@ YouTube Playlist → Download → Transcribe → AI Scripts → Video Clips → 
 ```
 
 Each phase can be run independently or skipped. Checkpointing skips existing outputs.
+
+## What's New in 2.3
+
+- **Auto-update system** — automatic update detection and installation from GitHub
+- **Backup system** — automatic backup before update (keeps up to 2 previous versions)
+- **Release notes** — view release notes before updating
+- **`/update` command** — check for and install updates via Telegram
+- **`/version` command** — show current version and update status
+- **`/status` enhanced** — now shows version and update availability
 
 ## What's New in 2.2
 

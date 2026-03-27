@@ -4,6 +4,14 @@ Lambda Cut — YouTube Shorts Pipeline
 Combines: lambda_cut.sh, telegram_listener.sh, generate_script.sh, onboard.sh
 """
 import argparse, base64, glob, html, json, os, re, shutil, subprocess, sys, threading, time, urllib.error, urllib.request
+from update_manager import (
+    get_local_version,
+    get_remote_version,
+    is_update_available,
+    get_release_notes,
+    check_for_updates,
+    perform_update,
+)
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 DEFAULT_WORKSPACE = os.path.expanduser("~/lambda_cut")
@@ -754,8 +762,17 @@ def process_cmd(text, chat_id):
 
         s = open(STATUS_FILE).read() if os.path.exists(STATUS_FILE) else ""
         pipeline_status = f"Running: {s}" if PIPELINE_RUNNING else f"Idle. Last: {s}" if s else "Idle"
+        
+        # Get version and update status
+        script_root = os.path.dirname(os.path.abspath(__file__))
+        local_ver = get_local_version(script_root)
+        update_info = check_for_updates(script_root)
+        update_status = ""
+        if update_info.get("update_available"):
+            remote_ver = update_info.get("remote_version", "?")
+            update_status = f"\n\nUpdate: v{remote_ver} available ✨"
 
-        tg_send(f"Listener: {listener_status}\nPID: {listener_pid}\nDir: {listener_dir}\n\nPipeline: {pipeline_status}")
+        tg_send(f"Listener: {listener_status}\nPID: {listener_pid}\nDir: {listener_dir}\nVersion: v{local_ver}\n\nPipeline: {pipeline_status}{update_status}")
 
     elif cmd == "/logs":
         if os.path.exists(LOG_FILE):
@@ -835,6 +852,9 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 /logs       - Pipeline logs
 /clear_logs - Clear pipeline logs
 
+/version    - Show current version
+/update     - Check for and install updates
+
 /stop_listener   - Stop the listener
 /stop_pipeline   - Stop running pipeline
 /delete_partial  - Delete incomplete files
@@ -870,6 +890,57 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
             tg_send("Pipeline logs cleared.")
         else:
             tg_send("No logs to clear.")
+
+    elif cmd == "/version":
+        script_root = os.path.dirname(os.path.abspath(__file__))
+        local_ver = get_local_version(script_root)
+        update_info = check_for_updates(script_root)
+        remote_ver = update_info.get("remote_version", "Unknown")
+        if update_info.get("update_available"):
+            tg_send(f"Current version: v{local_ver}\nLatest version: v{remote_ver}\n\nUpdate available! Run /update to install.")
+        else:
+            tg_send(f"Current version: v{local_ver}\nLatest version: v{remote_ver or 'Unknown'}\n\nYou're up to date!")
+
+    elif cmd == "/update":
+        script_root = os.path.dirname(os.path.abspath(__file__))
+        update_info = check_for_updates(script_root)
+        
+        if not update_info.get("update_available"):
+            tg_send("No update available. You're on the latest version!")
+        else:
+            remote_ver = update_info.get("remote_version", "Unknown")
+            release_notes = get_release_notes()
+            # Truncate release notes if too long
+            if len(release_notes) > 500:
+                release_notes = release_notes[:500] + "..."
+            
+            tg_send(f"""🔔 Update Available: v{remote_ver}
+
+<b>Release Notes:</b>
+{release_notes}
+
+<b>This will:</b>
+1. Backup current installation (up to 2 backups)
+2. Download and install new files
+3. Preserve your .env and settings
+4. Restart listener
+
+Type /confirm_update to proceed.""")
+    
+    elif cmd == "/confirm_update":
+        script_root = os.path.dirname(os.path.abspath(__file__))
+        tg_send("Updating... Please wait.")
+        
+        def _update():
+            result = perform_update(script_root)
+            if result.get("success"):
+                tg_send(f"✅ {result.get('message')}\n\nRestarting listener...")
+                # Restart listener
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+            else:
+                tg_send(f"❌ {result.get('message')}")
+        
+        threading.Thread(target=_update, daemon=True).start()
 
     else:
         tg_send("Unknown command. Use /help for available commands.")
@@ -944,7 +1015,22 @@ WantedBy=default.target
 
     me = tg_api("getMe")
     print(f"Lambda Cut Listener — @{me['result']['username']}")
-    tg_send("Lambda Cut listener started.")
+    
+    # Check for updates
+    print("Checking for updates...")
+    script_root = os.path.dirname(script_path)
+    update_info = check_for_updates(script_root)
+    local_ver = update_info.get("local_version", "Unknown")
+    print(f"Version: v{local_ver}")
+    
+    if update_info.get("update_available"):
+        remote_ver = update_info.get("remote_version", "Unknown")
+        print(f"Update available: v{remote_ver}")
+        tg_send(f"🔔 Update available: v{remote_ver}\nRun /update to install.")
+    else:
+        print("No updates available.")
+    
+    tg_send(f"Lambda Cut listener started (v{local_ver}).")
     offset = 0
 
     global LISTENER_RUNNING
