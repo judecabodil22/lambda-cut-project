@@ -2,6 +2,43 @@
 
 All notable changes to this project documented here.
 
+## 2.5 — 2026-03-27
+
+### Local Recording Integration
+
+| Feature | Details |
+|---------|---------|
+| `/run_local` command | Process local recordings instead of YouTube (one-time override) |
+| `/set_recording_path` | Change recording directory |
+| `/source` | Show current recording path |
+| Default behavior | YouTube playlist remains default |
+| File formats | Supports .mp4, .mkv, .webm |
+| Sorting | Oldest first (chronological) |
+| Delay | 300 seconds between videos |
+
+### Phase 6: Kdenlive Project Creation
+
+| Feature | Details |
+|---------|---------|
+| Auto-run | Phase 6 runs automatically after Phase 5 |
+| Input | All generated assets from Phases 1-5 |
+| Output | `Shorts Project_<timestamp>.kdenlive` |
+| Location | `output/` directory |
+| Assets included | Clips, TTS audio, scripts, subtitles, markers |
+| Effects | 4kFX applied to all clips |
+| Transitions | Random selection between clips |
+
+### Pipeline Enhancement
+
+| Change | Details |
+|--------|---------|
+| Phase 6 | Kdenlive project generation added |
+| Auto Phase 6 | Runs automatically after Phase 5 |
+| Project naming | `Shorts Project_<timestamp>.kdenlive` |
+| All assets | Clips, TTS, scripts, subtitles included |
+
+---
+
 ## 2.4 — 2026-03-27
 
 ### OBS Recording Workflow (Planned)

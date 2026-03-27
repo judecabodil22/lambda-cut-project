@@ -1,10 +1,10 @@
-# Lambda Cut 2.4
+# Lambda Cut 2.5
 
 Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
 
 ```
-YouTube Playlist → Download → Transcribe → AI Scripts → Video Clips → TTS Audio + Subtitles
-     Phase 1         Phase 2      Phase 3      Phase 4       Phase 5
+YouTube Playlist → Download → Transcribe → AI Scripts → Video Clips → TTS Audio + Subtitles → Kdenlive Project
+     Phase 1         Phase 2      Phase 3      Phase 4       Phase 5                         Phase 6
 ```
 
 Each phase can be run independently or skipped. Checkpointing skips existing outputs.
@@ -15,12 +15,19 @@ Each phase can be run independently or skipped. Checkpointing skips existing out
 
 The `.gitignore` file is configured to exclude sensitive files. When cloning this repository, you must set up your own configuration files.
 
+## What's New in 2.5
+
+- **Phase 6: Kdenlive project creation** — auto-generates Kdenlive project with all assets ready for rendering
+- **`/run_local` command** — process local recordings instead of YouTube (one-time override)
+- **`/set_recording_path`** — change recording directory
+- **`/source`** — show current recording path
+- **Auto Phase 6** — runs automatically after Phase 5
+
 ## What's New in 2.4
 
 - **OBS recording workflow** — record locally while streaming for maximum quality
 - **Optimal settings documented** — streaming and recording settings for 1440p
 - **Fragmented MP4 format** — crash recovery for long streams
-- **Local recording integration (planned)** — Lambda Cut will use local recordings instead of YouTube VOD
 
 ## What's New in 2.3
 
@@ -51,18 +58,22 @@ The `.gitignore` file is configured to exclude sensitive files. When cloning thi
 | 3 | Scripts | AI-generated short scripts via Gemini |
 | 4 | Clips | Extract video clips based on scenes |
 | 5 | TTS | Generate narration audio + subtitles |
+| 6 | Kdenlive | Auto-generate Kdenlive project with all assets |
 
 ### Telegram Commands
 
 | Command | Description |
 |---------|-------------|
-| `/run_pipeline` | Run full pipeline |
+| `/run_pipeline` | Run full pipeline from YouTube |
+| `/run_local` | Process local recordings (one-time override) |
 | `/run_phase 5` | Run specific phase(s) |
 | `/run_phase 2,3` | Run phases 2 and 3 |
 | `/skip_phase 1,2` | Skip specific phases |
 | `/set_voice Puck` | Change TTS voice |
 | `/set_style Say...` | Set style prefix |
 | `/set_index 3` | Set playlist index |
+| `/set_recording_path` | Change recording directory |
+| `/source` | Show current recording path |
 | `/config` | Show settings |
 | `/status` | Show listener and pipeline status |
 | `/version` | Show current version |
