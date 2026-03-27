@@ -2,6 +2,25 @@
 
 All notable changes to this project documented here.
 
+## 2.5.1 — 2026-03-28
+
+### Update System Fix
+
+| Fix | Details |
+|-----|---------|
+| Directory structure | Fixed nested directory creation during updates |
+| File copying | Corrected to preserve installed directory structure |
+| Backup validation | Improved backup verification |
+| QA testing | Added testing checklist for new features |
+
+### QA Process Added
+
+- All new features must undergo testing before deployment
+- Test checklist includes: basic functionality, edge cases, integration
+- Update system now tested with directory structure preservation
+
+---
+
 ## 2.5 — 2026-03-27
 
 ### Local Recording Integration

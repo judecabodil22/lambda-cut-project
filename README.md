@@ -1,4 +1,4 @@
-# Lambda Cut 2.5
+# Lambda Cut 2.5.1
 
 Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
 
@@ -14,6 +14,11 @@ Each phase can be run independently or skipped. Checkpointing skips existing out
 **IMPORTANT: Never commit your `.env` file or API keys to the repository!**
 
 The `.gitignore` file is configured to exclude sensitive files. When cloning this repository, you must set up your own configuration files.
+
+## What's New in 2.5.1
+
+- **Update system fix** — fixed directory structure issue during updates
+- **QA process** — all new features must be tested before deployment
 
 ## What's New in 2.5
 
