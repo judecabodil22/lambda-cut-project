@@ -1,0 +1,40 @@
+# Lambda Cut - Git Ignore
+
+# Environment variables and secrets
+.env
+*.env.local
+*.env.production
+gemini_keys.txt
+workflows/.env
+workflows/gemini_keys.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Logs
+pipeline.log
+
+# Output directories
+output/
+
+# Backup directories
+backups/
+
+# Generated content
+streams/
+scripts/
+shorts/
+tts/
+transcripts/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
