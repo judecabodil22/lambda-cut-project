@@ -1,4 +1,4 @@
-# Lambda Cut 2.5.5
+# Lambda Cut 2.5.7
 
 Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
 
@@ -15,11 +15,18 @@ Each phase can be run independently or skipped. Checkpointing skips existing out
 
 The `.gitignore` file is configured to exclude sensitive files. When cloning this repository, you must set up your own configuration files.
 
+## What's New in 2.5.7
+
+- **Restart fix** — reset flag after restart to prevent spam
+
+## What's New in 2.5.6
+
+- **Restart fix** — uses subprocess.Popen for reliable restart
+
 ## What's New in 2.5.5
 
 - **`/restart_listener` command** — restart listener via Telegram
 - **Systemd always-restart** — listener auto-restarts after any exit
-- **Restart fix** — listener reliably restarts after update
 
 ## What's New in 2.5.4
 

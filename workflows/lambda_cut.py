@@ -1011,7 +1011,6 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 /help - This message""")
 
     elif cmd in ("/restart_listener", "/restart"):
-        global LISTENER_RESTART
         tg_send("Restarting listener...")
         LISTENER_RESTART = True
 
@@ -1097,6 +1096,8 @@ Type /confirm_update to proceed.""")
         tg_send("Unknown command. Use /help for available commands.")
 
 def listen():
+    global LISTENER_RESTART
+    
     if not _telegram_configured():
         print("Telegram not configured. Run onboard and enable Telegram to use the listener.")
         sys.exit(1)
@@ -1200,9 +1201,14 @@ WantedBy=default.target
                     print(f"Received: {txt}")
                     process_cmd(txt, cid)
                     if LISTENER_RESTART:
+                        LISTENER_RESTART = False
                         tg_send("Restarting listener...")
                         time.sleep(1)
-                        os.execv(sys.executable, [sys.executable] + sys.argv)
+                        subprocess.Popen([sys.executable] + sys.argv, 
+                                       stdout=open("/tmp/lambda_cut.log", "w"),
+                                       stderr=subprocess.STDOUT,
+                                       start_new_session=True)
+                        sys.exit(0)
         except urllib.error.URLError:
             time.sleep(5)
         except Exception as e:

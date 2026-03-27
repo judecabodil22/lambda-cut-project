@@ -2,6 +2,27 @@
 
 All notable changes to this project documented here.
 
+## 2.5.7 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Restart flag reset | Reset LISTENER_RESTART flag after triggering restart to prevent spam |
+| Global declaration | Fixed syntax error with global declaration in listen() |
+
+---
+
+## 2.5.6 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Restart mechanism | Changed from os.execv to subprocess.Popen with new session for reliable restart |
+
+---
+
 ## 2.5.5 — 2026-03-28
 
 ### Features
