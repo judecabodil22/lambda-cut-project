@@ -1,4 +1,4 @@
-# Lambda Cut 2.5.2
+# Lambda Cut 2.5.3
 
 Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
 
@@ -15,10 +15,13 @@ Each phase can be run independently or skipped. Checkpointing skips existing out
 
 The `.gitignore` file is configured to exclude sensitive files. When cloning this repository, you must set up your own configuration files.
 
+## What's New in 2.5.3
+
+- **Restart fix** — listener reliably restarts after update (moved os.execv to main thread)
+
 ## What's New in 2.5.2
 
 - **Update path fix** — updates now correctly target project root instead of `workflows/` subdirectory
-- **Restart fix** — listener reliably restarts after update
 - **`/run_local` command** — process local recordings instead of YouTube
 
 ## What's New in 2.5.1
