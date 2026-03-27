@@ -13,6 +13,14 @@ All notable changes to this project documented here.
 | Backup validation | Improved backup verification |
 | QA testing | Added testing checklist for new features |
 
+### Update & Restart Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Update target path | Fixed `script_root` to use project root instead of `workflows/` subdirectory |
+| Listener restart | Fixed `os.execv` call to work from update thread for reliable restarts |
+| Help text | Added `/run_local` command to help display |
+
 ### QA Process Added
 
 - All new features must undergo testing before deployment
