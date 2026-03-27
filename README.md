@@ -1,4 +1,4 @@
-# Lambda Cut 2.3
+# Lambda Cut 2.4
 
 Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
 
@@ -15,39 +15,12 @@ Each phase can be run independently or skipped. Checkpointing skips existing out
 
 The `.gitignore` file is configured to exclude sensitive files. When cloning this repository, you must set up your own configuration files.
 
-## Quick Start
+## What's New in 2.4
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/judecabodil22/lambda-cut-project.git
-cd lambda-cut-project
-```
-
-### 2. Set up configuration
-
-```bash
-cp .env.example workflows/.env
-```
-
-Edit `workflows/.env` with your settings:
-- `PLAYLIST_URL`: Your YouTube playlist URL
-- `GEMINI_API_KEY`: Your Google Gemini API key
-- `TELEGRAM_BOT_TOKEN`: Your Telegram bot token (optional)
-- `TELEGRAM_CHAT_ID`: Your Telegram chat ID (optional)
-
-### 3. Run onboard
-
-```bash
-cd workflows
-python3 lambda_cut.py onboard
-```
-
-### 4. Start the listener
-
-```bash
-python3 lambda_cut.py listen
-```
+- **OBS recording workflow** — record locally while streaming for maximum quality
+- **Optimal settings documented** — streaming and recording settings for 1440p
+- **Fragmented MP4 format** — crash recovery for long streams
+- **Local recording integration (planned)** — Lambda Cut will use local recordings instead of YouTube VOD
 
 ## What's New in 2.3
 
@@ -119,6 +92,63 @@ Lambda Cut includes an automatic update system:
 - Shows update status in `/status`
 - `/update` command to install updates
 - Automatic backup before update (up to 2 backups)
+
+## OBS Recording Workflow (Optimal Quality)
+
+For maximum quality, record locally while streaming. This provides higher quality source material for Lambda Cut processing.
+
+### Recommended OBS Settings
+
+#### Streaming Settings
+
+| Setting | Value | Notes |
+|---------|-------|-------|
+| Resolution | 2560x1440 (1440p) | Optimal for 1080p game |
+| Frame Rate | 60 fps | Smooth motion |
+| Encoder | FFMPEG VAAPI H.264 | GPU encoding |
+| Rate Control | CBR | For streaming |
+| Bitrate | 24,000 kbps | YouTube optimal for 1440p |
+| Profile | High | Best quality |
+| Level | Auto | |
+| Keyframe Interval | 2 seconds | |
+| Max B-Frames | 2 | |
+
+#### Recording Settings
+
+| Setting | Value | Notes |
+|---------|-------|-------|
+| Resolution | 2560x1440 (1440p) | Match stream |
+| Frame Rate | 60 fps | |
+| Encoder | FFMPEG VAAPI H.264 | Same as stream |
+| Rate Control | CQP | Best for recording |
+| CQP | 16 | Visually lossless |
+| Profile | High | |
+| Level | Auto | |
+| Keyframe Interval | 2 seconds | |
+| File Format | Fragmented MP4 | Crash recovery |
+| Recording Path | `/home/alph4r1us/Videos/Recordings/` | |
+
+### Why Record Locally?
+
+| Method | Quality | File Size | Compression |
+|--------|---------|-----------|-------------|
+| YouTube VOD | Compressed | Medium | 3 generations |
+| Local Recording | Original | Large | 1 generation |
+
+### Recording Path
+
+```
+/home/alph4r1us/Videos/Recordings/
+```
+
+Lambda Cut will auto-detect new recordings in this directory.
+
+### Benefits
+
+1. **Higher quality source** — No YouTube re-encoding loss
+2. **Faster processing** — No download step
+3. **Original quality** — CQP 16 preserves detail
+4. **Crash recovery** — Fragmented MP4 protects against crashes
 
 ## Project Structure
 

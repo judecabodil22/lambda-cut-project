@@ -2,6 +2,37 @@
 
 All notable changes to this project documented here.
 
+## 2.4 — 2026-03-27
+
+### OBS Recording Workflow (Planned)
+
+| Feature | Details |
+|---------|---------|
+| Recording path | `/home/alph4r1us/Videos/Recordings/` |
+| Recording format | Fragmented MP4 (crash recovery) |
+| Recording quality | CQP 16 (visually lossless) |
+| Recording resolution | 1440p @ 60fps |
+| Auto-detection | Lambda Cut will auto-detect new recordings |
+| Integration | Uses local recording instead of YouTube VOD |
+
+### Optimal Settings Documented
+
+| Setting | Value | Reason |
+|---------|-------|--------|
+| **Streaming** | 1440p @ 60fps, 24 Mbps CBR | YouTube optimal for 1440p |
+| **Recording** | 1440p @ 60fps, CQP 16 | High quality for Lambda Cut |
+| **File format** | Fragmented MP4 | Crash recovery for long streams |
+| **Encoder** | VAAPI H.264 | GPU encoding, low CPU usage |
+
+### Planned Integration
+
+- Lambda Cut will watch `/home/alph4r1us/Videos/Recordings/` for new files
+- Auto-select latest recording for processing
+- No manual file selection needed
+- Skip YouTube VOD download (use local recording)
+
+---
+
 ## 2.3 — 2026-03-27
 
 ### Auto-Update System
