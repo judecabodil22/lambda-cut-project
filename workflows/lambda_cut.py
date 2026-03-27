@@ -12,6 +12,12 @@ from update_manager import (
     check_for_updates,
     perform_update,
 )
+# Kdenlive automation module
+try:
+    from kdenlive_automation import generate_kdenlive_project
+    HAS_KDENLIVE_AUTOMATION = True
+except ImportError:
+    HAS_KDENLIVE_AUTOMATION = False
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 DEFAULT_WORKSPACE = os.path.expanduser("~/lambda_cut")
@@ -38,6 +44,7 @@ TRANSCRIPTS_DIR  = os.path.join(WORKSPACE, "transcripts")
 SCRIPTS_DIR      = os.path.join(WORKSPACE, "scripts")
 TTS_DIR          = os.path.join(WORKSPACE, "tts")
 SHORTS_DIR       = os.path.join(WORKSPACE, "shorts")
+OUTPUT_DIR       = os.path.join(WORKSPACE, "output")
 
 STREAMING = False  # set True when called from listener
 PIPELINE_RUNNING = False
@@ -561,7 +568,7 @@ def run_pipeline(skip=None, phases=None):
             return True
         return False
 
-    for d in (STREAMS_DIR, TRANSCRIPTS_DIR, SCRIPTS_DIR, TTS_DIR, SHORTS_DIR):
+    for d in (STREAMS_DIR, TRANSCRIPTS_DIR, SCRIPTS_DIR, TTS_DIR, SHORTS_DIR, OUTPUT_DIR):
         os.makedirs(d, exist_ok=True)
 
     skip = skip or set()
@@ -605,6 +612,18 @@ def run_pipeline(skip=None, phases=None):
     if 5 not in skip:
         phase_tts(duration, num_hours)
         if check_stop(): return
+
+    # Phase 6: Kdenlive Project Generation (auto-run after Phase 5)
+    if HAS_KDENLIVE_AUTOMATION:
+        log("Phase 6: Generating Kdenlive project...")
+        set_status("Phase 6: Generating Kdenlive project...")
+        try:
+            generate_kdenlive_project(WORKSPACE)
+            log("Phase 6: Kdenlive project generated!")
+        except Exception as e:
+            log_error(f"Phase 6: Kdenlive project generation failed: {e}")
+    else:
+        log("Phase 6: Kdenlive automation module not available, skipping...")
 
     log("Pipeline Complete!")
     set_status("Pipeline Complete")
