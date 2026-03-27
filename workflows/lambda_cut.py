@@ -555,6 +555,116 @@ def video_info(path):
              "-of", "default=noprint_wrappers=1:nokey=1", path])
     return int(float(r.stdout.strip()))
 
+# ─── Local Recording Processing ──────────────────────────────────────────────
+def run_local_recordings(recording_path):
+    """Process local recordings from a directory."""
+    global PIPELINE_STOP_REQUESTED, PIPELINE_RUNNING
+    PIPELINE_STOP_REQUESTED = False
+    PIPELINE_RUNNING = True
+
+    def check_stop():
+        if PIPELINE_STOP_REQUESTED:
+            log("Pipeline stopped by user")
+            set_status("Pipeline Stopped")
+            notify("Pipeline stopped by user.")
+            return True
+        return False
+
+    # Create required directories
+    for d in (STREAMS_DIR, TRANSCRIPTS_DIR, SCRIPTS_DIR, TTS_DIR, SHORTS_DIR, OUTPUT_DIR):
+        os.makedirs(d, exist_ok=True)
+
+    # Check if recording path exists
+    if not os.path.exists(recording_path):
+        log_error(f"Recording path not found: {recording_path}")
+        notify(f"Error: Recording path not found: {recording_path}")
+        return
+
+    # Find all video files in recording path
+    video_extensions = (".mp4", ".mkv", ".webm", ".avi", ".mov")
+    video_files = []
+    for f in os.listdir(recording_path):
+        if f.lower().endswith(video_extensions):
+            full_path = os.path.join(recording_path, f)
+            video_files.append(full_path)
+
+    if not video_files:
+        log_error(f"No video files found in {recording_path}")
+        notify(f"No video files found in {recording_path}")
+        return
+
+    # Sort by modification time (oldest first)
+    video_files.sort(key=os.path.getmtime)
+
+    log(f"Found {len(video_files)} local recording(s)")
+    notify(f"Processing {len(video_files)} local recording(s)...")
+
+    # Process each video
+    for i, video_file in enumerate(video_files, 1):
+        if check_stop():
+            return
+
+        video_name = os.path.basename(video_file)
+        log(f"Processing video {i}/{len(video_files)}: {video_name}")
+
+        # Copy video to streams directory
+        dest_path = os.path.join(STREAMS_DIR, video_name)
+        if not os.path.exists(dest_path):
+            shutil.copy2(video_file, dest_path)
+            log(f"  Copied to streams/: {video_name}")
+
+        # Run the pipeline phases for this video
+        try:
+            duration = video_info(dest_path)
+            if duration <= 0:
+                log_error(f"Invalid video: {video_name}")
+                continue
+
+            num_hours = max(1, duration // 3600)
+            log(f"Video: {duration}s = {num_hours} hour(s)")
+
+            # Phase 2: Transcribe
+            json_file = phase_transcribe(dest_path)
+            if check_stop(): return
+
+            # Phase 3: Scripts
+            if json_file:
+                phase_scripts(json_file, duration, num_hours)
+                if check_stop(): return
+
+            # Phase 4: Clips
+            if json_file:
+                phase_clips(dest_path, json_file, duration, num_hours)
+                if check_stop(): return
+
+            # Phase 5: TTS
+            phase_tts(duration, num_hours)
+            if check_stop(): return
+
+            # Phase 6: Kdenlive
+            if HAS_KDENLIVE_AUTOMATION:
+                log("Phase 6: Generating Kdenlive project...")
+                try:
+                    generate_kdenlive_project(WORKSPACE)
+                    log("Phase 6: Kdenlive project generated!")
+                except Exception as e:
+                    log_error(f"Phase 6: {e}")
+
+            log(f"Video {i}/{len(video_files)} complete!")
+
+            # Delay between videos (300 seconds)
+            if i < len(video_files):
+                log("Waiting 300 seconds before next video...")
+                time.sleep(300)
+
+        except Exception as e:
+            log_error(f"Error processing {video_name}: {e}")
+            continue
+
+    log("All local recordings processed!")
+    set_status("Pipeline Complete")
+    notify(f"Local recording pipeline complete! Processed {len(video_files)} video(s).")
+
 # ─── Pipeline orchestrator ────────────────────────────────────────────────────
 def run_pipeline(skip=None, phases=None):
     global PIPELINE_STOP_REQUESTED
@@ -669,7 +779,7 @@ def process_cmd(text, chat_id):
         if not _check_configured():
             tg_send("Not configured yet. Run onboarding first:\n  python3 lambda_cut.py onboard")
         else:
-            tg_send("Pipeline triggered!")
+            tg_send("Pipeline triggered! Source: YouTube playlist")
             def _run():
                 global PIPELINE_RUNNING
                 PIPELINE_RUNNING = True
@@ -677,6 +787,23 @@ def process_cmd(text, chat_id):
                     run_pipeline()
                 except Exception as e:
                     tg_send(f"Pipeline error: {e}")
+                finally:
+                    PIPELINE_RUNNING = False
+            threading.Thread(target=_run, daemon=True).start()
+
+    elif cmd in ("/run_local", "/runlocal"):
+        if not _check_configured():
+            tg_send("Not configured yet. Run onboarding first:\n  python3 lambda_cut.py onboard")
+        else:
+            recording_path = env("RECORDING_PATH", os.path.expanduser("~/Videos/Recordings"))
+            tg_send(f"Current source: YouTube playlist (default)\nProcessing local recordings from: {recording_path}")
+            def _run():
+                global PIPELINE_RUNNING
+                PIPELINE_RUNNING = True
+                try:
+                    run_local_recordings(recording_path)
+                except Exception as e:
+                    tg_send(f"Local recording error: {e}")
                 finally:
                     PIPELINE_RUNNING = False
             threading.Thread(target=_run, daemon=True).start()
@@ -857,6 +984,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 
 <b>Commands:</b>
 /run_pipeline    - Run full pipeline
+/run_local       - Run pipeline on local recording
 /run_phase 5    - Run specific phase(s)
 /run_phase 2,3  - Run phases 2 and 3
 /skip_phase 1,2 - Skip specific phases
