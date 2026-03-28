@@ -2,6 +2,19 @@
 
 All notable changes to this project documented here.
 
+## 2.5.19 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Telegram HTTP 400 errors | Fixed by changing default parse_mode from HTML to plain text and improving error logging |
+| Stable-ts command updated | Updated TTS SRT generation to use explicit output file and proper parameters |
+| VAD TorchScript error handling | Added fallback from stable-whisper to stable-ts when model fails |
+| HTML tags in SRT files | Ensured word_level is false to avoid HTML tags in output |
+
+---
+
 ## 2.5.18 — 2026-03-28
 
 ### Phase 6 Removed

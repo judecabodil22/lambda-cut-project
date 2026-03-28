@@ -3,7 +3,7 @@
 Lambda Cut — YouTube Shorts Pipeline
 Combines: lambda_cut.sh, telegram_listener.sh, generate_script.sh, onboard.sh
 """
-import argparse, base64, glob, html, json, os, re, shutil, subprocess, sys, threading, time, urllib.error, urllib.request
+import argparse, base64, glob, html, json, os, re, shutil, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from update_manager import (
     get_local_version,
     get_remote_version,
@@ -86,16 +86,26 @@ def set_status(msg):
         pass
 
 # ─── Telegram ─────────────────────────────────────────────────────────────────
-def tg_send(msg, parse_mode="HTML"):
+def tg_send(msg, parse_mode=None):
     token = env("TELEGRAM_BOT_TOKEN")
     chat  = env("TELEGRAM_CHAT_ID")
     if not token or not chat:
         return
     try:
-        data = urllib.parse.urlencode({"chat_id": chat, "text": msg, "parse_mode": parse_mode}).encode()
+        params = {"chat_id": chat, "text": msg}
+        if parse_mode:
+            params["parse_mode"] = parse_mode
+        data = urllib.parse.urlencode(params).encode()
         req  = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage",
                                       data=data, method="POST")
         urllib.request.urlopen(req, timeout=10)
+    except urllib.error.HTTPError as e:
+        # Capture response body for better debugging
+        try:
+            body = e.read().decode()
+        except:
+            body = "No response body"
+        log_error(f"Telegram: {e.code} {e.reason} - {body[:200]}")
     except Exception as e:
         log_error(f"Telegram: {e}")
 
@@ -205,7 +215,8 @@ def phase_transcribe(video):
         result = model.transcribe(video, language="en", vad=True)
         result.to_srt_vtt(os.path.join(TRANSCRIPTS_DIR, f"{basename}.srt"))
         result.save_as_json(os.path.join(TRANSCRIPTS_DIR, f"{basename}.json"))
-    except ImportError:
+    except Exception as e:
+        log(f"stable-whisper failed: {e}, falling back to stable-ts")
         run(["stable-ts", "-y", video, "--output_dir", TRANSCRIPTS_DIR,
              "--output_format", "srt,json", "--word_timestamps", "False",
              "--vad", "True", "--language", "en"])
@@ -515,7 +526,8 @@ def phase_tts(duration, num_hours):
 
         if not os.path.exists(srt):
             log(f"   Generating SRT for tts_{padded}.wav...")
-            run(["stable-ts", wav, "--word_level", "false", "--device", "cpu", 
+            srt_out = os.path.splitext(wav)[0] + ".srt"
+            run(["stable-ts", wav, "-o", srt_out, "--word_level", "false", "--device", "cpu",
                  "--language", "en", "--output_format", "srt"], check=False)
             log(f"   tts_{padded}.srt created" if os.path.exists(srt) else
                 log_error(f"   SRT failed for tts_{padded}"))
@@ -974,7 +986,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 /delete_partial  - Delete incomplete files
 /cleanup         - Delete all generated files
 
-/help - This message""")
+/help - This message""", parse_mode="HTML")
 
     elif cmd in ("/restart_listener", "/restart"):
         tg_send("Restarting listener...")
@@ -1038,7 +1050,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 3. Preserve your .env and settings
 4. Restart listener
 
-Type /confirm_update to proceed.""")
+Type /confirm_update to proceed.""", parse_mode="HTML")
     
     elif cmd == "/confirm_update":
         script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1438,8 +1450,7 @@ def onboard():
         try:
             data = urllib.parse.urlencode({
                 "chat_id": env("TELEGRAM_CHAT_ID"),
-                "text": "Lambda Cut configured!",
-                "parse_mode": "HTML"
+                "text": "Lambda Cut configured!"
             }).encode()
             req = urllib.request.Request(
                 f"https://api.telegram.org/bot{env('TELEGRAM_BOT_TOKEN')}/sendMessage",
