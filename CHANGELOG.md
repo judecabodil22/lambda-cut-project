@@ -2,6 +2,46 @@
 
 All notable changes to this project documented here.
 
+## 2.5.11 — 2026-03-28
+
+### Features
+
+| Feature | Details |
+|---------|---------|
+| Kdenlive templates | Base template now in templates/ folder instead of output/ |
+
+---
+
+## 2.5.10 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Kdenlive markers | Fixed markers now use script titles from workspace |
+
+---
+
+## 2.5.9 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Kdenlive crash | Fixed crash by removing references to non-existent TTS/shorts files |
+
+---
+
+## 2.5.8 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Kdenlive paths | Fixed hardcoded source directory paths in Kdenlive project generation |
+
+---
+
 ## 2.5.7 — 2026-03-28
 
 ### Bug Fixes

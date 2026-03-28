@@ -17,13 +17,19 @@ from datetime import datetime
 # ==============================
 
 FRAME_RATE = 25
-# Use the latest output file as base project if no specific base exists
-OUTPUT_DIR = "/home/alph4r1us/Documents/Black-Mesa Laboratories/lambda-cut/output"
 ASS_STYLE = "Style: Default,Fira Sans Ultra,70.00,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100.00,100.00,0.00,0.00,1,10.00,11.00,5,40,40,71,1"
 
-def find_base_project():
-    """Find the latest Kdenlive project to use as template."""
-    output_dir = OUTPUT_DIR
+def find_base_project(workspace):
+    """Find the Kdenlive project to use as template."""
+    # First check templates folder
+    templates_dir = os.path.join(workspace, "templates")
+    if os.path.exists(templates_dir):
+        projects = sorted(glob.glob(os.path.join(templates_dir, "*.kdenlive")))
+        if projects:
+            return projects[0]  # Return first template found
+    
+    # Fall back to output folder
+    output_dir = os.path.join(workspace, "output")
     if os.path.exists(output_dir):
         projects = sorted(glob.glob(os.path.join(output_dir, "*.kdenlive")))
         if projects:
@@ -174,9 +180,10 @@ def generate_kdenlive_project(workspace):
     print("=" * 50)
     
     # Find base project
-    base_project = find_base_project()
+    output_dir = os.path.join(workspace, "output")
+    base_project = find_base_project(workspace)
     if not base_project:
-        print(f"Error: No base project found in {OUTPUT_DIR}")
+        print(f"Error: No base project found in {output_dir}")
         return None
     
     print(f"Using base project: {os.path.basename(base_project)}")
@@ -207,6 +214,7 @@ def generate_kdenlive_project(workspace):
     
     # Generate markers
     markers_json = generate_markers_json(script_titles, tts_durations)
+    print(f"  Generated {len(script_titles)} markers")
     
     # Generate ASS subtitles
     print("Generating ASS subtitles...")
@@ -215,9 +223,50 @@ def generate_kdenlive_project(workspace):
         f.write(ass_content)
     print(f"  Subtitles saved: {ass_file}")
     
-    # Save base project as output (simplified)
-    import shutil
-    shutil.copy2(base_project, project_file)
+    # Save base project as output, replacing old paths with new workspace
+    with open(base_project, 'r') as f:
+        content = f.read()
+    
+    # Replace markers/guides with new ones
+    import re
+    content = re.sub(r'<property name="kdenlive:sequenceproperties\.guides">.*?</property>', 
+                      f'<property name="kdenlive:sequenceproperties.guides">{markers_json}</property>', content, flags=re.DOTALL)
+    content = re.sub(r'<property name="kdenlive:markers">.*?</property>', 
+                      f'<property name="kdenlive:markers">{markers_json}</property>', content, flags=re.DOTALL)
+    
+    # Replace known old paths with workspace (longest first)
+    old_paths = [
+        "/home/alph4r1us/Documents/Black-Mesa Laboratories/lambda-cut/Lambda Cut 2.1",
+        "/home/alph4r1us/Documents/Black-Mesa Laboratories/lambda-cut",
+        "/home/alph4r1us/lambda_cut",
+    ]
+    for old in old_paths:
+        if old in content:
+            content = content.replace(old, workspace)
+    
+    # Remove references to non-existent TTS and shorts files
+    # Find all file references and remove chains for files that don't exist
+    # Pattern: <chain ... </chain> blocks
+    chain_pattern = re.compile(r'(<chain[^>]*>.*?</chain>)', re.DOTALL)
+    
+    def keep_chain(match):
+        chain_content = match.group(1)
+        # Find resource path in this chain
+        resource_match = re.search(r'<property name="resource">([^<]+)</property>', chain_content)
+        if resource_match:
+            resource_path = resource_match.group(1)
+            # Keep chain only if file exists
+            if os.path.exists(resource_path):
+                return chain_content
+            else:
+                return ''
+        return chain_content
+    
+    content = chain_pattern.sub(keep_chain, content)
+    
+    with open(project_file, 'w') as f:
+        f.write(content)
+    
     print(f"  Project saved: {project_file}")
     
     # Summary
