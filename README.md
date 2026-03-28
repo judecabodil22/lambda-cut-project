@@ -1,4 +1,4 @@
-# Lambda Cut 2.5.17
+# Lambda Cut 2.5.19
 
 Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
 
@@ -15,21 +15,62 @@ Each phase can be run independently or skipped. Checkpointing skips existing out
 
 The `.gitignore` file is configured to exclude sensitive files. When cloning this repository, you must set up your own configuration files.
 
-## What's New in 2.5.9
+## What's New in 2.5.19
+
+- **Bug fixes** — Telegram HTTP 400 errors fixed, stable-ts command updated, VAD TorchScript error handling added, HTML tags in SRT files removed
+
+## What's New in 2.5.18
 
 - **Phase 6 removed** — Kdenlive automation disabled due to persistent XML issues
 
+## What's New in 2.5.17
+
+- **Kdenlive crash fix** — fixed by removing playlist entries referencing removed chains
+
+## What's New in 2.5.16
+
+- **Kdenlive crash fix** — fixed by removing orphaned playlist entries
+
+## What's New in 2.5.15
+
+- **SRT generation fix** — use stable-ts CLI with proper output format
+
+## What's New in 2.5.14
+
+- **stable-ts command fix** — corrected argument order
+
+## What's New in 2.5.13
+
+- **stable-ts command update** — updated CLI command
+
+## What's New in 2.5.12
+
+- **stable-ts CLI fix** — fixed command for SRT generation
+
+## What's New in 2.5.11
+
+- **Kdenlive templates** — moved to templates/ folder
+
+## What's New in 2.5.10
+
+- **Kdenlive markers fix** — use script titles from workspace
+
+## What's New in 2.5.9
+
+- **Kdenlive crash fix** — removed references to non-existent TTS/shorts files
+
 ## What's New in 2.5.8
 
-- **Kdenlive path fix** — fixed hardcoded paths pointing to source directory
+- **Kdenlive path fix** — fixed hardcoded source directory paths
 
 ## What's New in 2.5.7
 
-- **Restart fix** — reset flag after restart to prevent spam
+- **Restart flag reset** — reset flag after restart to prevent spam
+- **Global declaration fix** — fixed syntax error
 
 ## What's New in 2.5.6
 
-- **Restart fix** — uses subprocess.Popen for reliable restart
+- **Restart mechanism** — changed from os.execv to subprocess.Popen for reliability
 
 ## What's New in 2.5.5
 
@@ -38,11 +79,16 @@ The `.gitignore` file is configured to exclude sensitive files. When cloning thi
 
 ## What's New in 2.5.4
 
-- **Restart fix** — listener reliably restarts after update (waits for update thread to complete)
+- **Listener restart fix** — wait for update thread to complete before checking flag
+
+## What's New in 2.5.3
+
+- **Listener restart fix** — moved os.execv from daemon thread to main polling loop
 
 ## What's New in 2.5.2
 
 - **Update path fix** — updates now correctly target project root instead of `workflows/` subdirectory
+- **Listener restart fix** — fixed os.execv call to work reliably
 - **`/run_local` command** — process local recordings instead of YouTube
 
 ## What's New in 2.5.1
@@ -91,7 +137,7 @@ The `.gitignore` file is configured to exclude sensitive files. When cloning thi
 | 3 | Scripts | AI-generated short scripts via Gemini |
 | 4 | Clips | Extract video clips based on scenes |
 | 5 | TTS | Generate narration audio + subtitles |
-| 6 | Kdenlive | Auto-generate Kdenlive project with all assets |
+| 6 | Kdenlive | **Removed** — Kdenlive automation disabled due to XML issues |
 
 ### Telegram Commands
 
