@@ -1,10 +1,10 @@
-# Lambda Cut 2.5.15
+# Lambda Cut 2.5.17
 
 Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
 
 ```
-YouTube Playlist → Download → Transcribe → AI Scripts → Video Clips → TTS Audio + Subtitles → Kdenlive Project
-     Phase 1         Phase 2      Phase 3      Phase 4       Phase 5                         Phase 6
+YouTube Playlist → Download → Transcribe → AI Scripts → Video Clips → TTS Audio + Subtitles
+     Phase 1         Phase 2      Phase 3      Phase 4       Phase 5
 ```
 
 Each phase can be run independently or skipped. Checkpointing skips existing outputs.
@@ -17,7 +17,7 @@ The `.gitignore` file is configured to exclude sensitive files. When cloning thi
 
 ## What's New in 2.5.9
 
-- **Kdenlive crash fix** — removes references to non-existent files
+- **Phase 6 removed** — Kdenlive automation disabled due to persistent XML issues
 
 ## What's New in 2.5.8
 
@@ -52,11 +52,9 @@ The `.gitignore` file is configured to exclude sensitive files. When cloning thi
 
 ## What's New in 2.5
 
-- **Phase 6: Kdenlive project creation** — auto-generates Kdenlive project with all assets ready for rendering
 - **`/run_local` command** — process local recordings instead of YouTube (one-time override)
 - **`/set_recording_path`** — change recording directory
 - **`/source`** — show current recording path
-- **Auto Phase 6** — runs automatically after Phase 5
 
 ## What's New in 2.4
 

@@ -12,13 +12,6 @@ from update_manager import (
     check_for_updates,
     perform_update,
 )
-# Kdenlive automation module
-try:
-    from kdenlive_automation import generate_kdenlive_project
-    HAS_KDENLIVE_AUTOMATION = True
-except ImportError:
-    HAS_KDENLIVE_AUTOMATION = False
-
 # ─── Paths ────────────────────────────────────────────────────────────────────
 DEFAULT_WORKSPACE = os.path.expanduser("~/lambda_cut")
 
@@ -636,15 +629,6 @@ def run_local_recordings(recording_path):
             phase_tts(duration, num_hours)
             if check_stop(): return
 
-            # Phase 6: Kdenlive
-            if HAS_KDENLIVE_AUTOMATION:
-                log("Phase 6: Generating Kdenlive project...")
-                try:
-                    generate_kdenlive_project(WORKSPACE)
-                    log("Phase 6: Kdenlive project generated!")
-                except Exception as e:
-                    log_error(f"Phase 6: {e}")
-
             log(f"Video {i}/{len(video_files)} complete!")
 
             # Delay between videos (300 seconds)
@@ -717,18 +701,6 @@ def run_pipeline(skip=None, phases=None):
     if 5 not in skip:
         phase_tts(duration, num_hours)
         if check_stop(): return
-
-    # Phase 6: Kdenlive Project Generation (auto-run after Phase 5)
-    if HAS_KDENLIVE_AUTOMATION:
-        log("Phase 6: Generating Kdenlive project...")
-        set_status("Phase 6: Generating Kdenlive project...")
-        try:
-            generate_kdenlive_project(WORKSPACE)
-            log("Phase 6: Kdenlive project generated!")
-        except Exception as e:
-            log_error(f"Phase 6: Kdenlive project generation failed: {e}")
-    else:
-        log("Phase 6: Kdenlive automation module not available, skipping...")
 
     log("Pipeline Complete!")
     set_status("Pipeline Complete")

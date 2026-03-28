@@ -2,6 +2,37 @@
 
 All notable changes to this project documented here.
 
+## 2.5.18 — 2026-03-28
+
+### Phase 6 Removed
+
+| Change | Details |
+|--------|---------|
+| Phase 6 removed | Kdenlive automation disabled due to persistent XML parsing issues |
+| Rationale | The complex template-based approach proved too fragile to maintain |
+
+---
+
+## 2.5.17 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Kdenlive crash | Fixed by properly removing playlist entries referencing removed chains |
+
+---
+
+## 2.5.16 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Kdenlive crash | Fixed by removing orphaned playlist entries that reference removed chains |
+
+---
+
 ## 2.5.15 — 2026-03-28
 
 ### Bug Fixes
@@ -200,27 +231,6 @@ All notable changes to this project documented here.
 | File formats | Supports .mp4, .mkv, .webm |
 | Sorting | Oldest first (chronological) |
 | Delay | 300 seconds between videos |
-
-### Phase 6: Kdenlive Project Creation
-
-| Feature | Details |
-|---------|---------|
-| Auto-run | Phase 6 runs automatically after Phase 5 |
-| Input | All generated assets from Phases 1-5 |
-| Output | `Shorts Project_<timestamp>.kdenlive` |
-| Location | `output/` directory |
-| Assets included | Clips, TTS audio, scripts, subtitles, markers |
-| Effects | 4kFX applied to all clips |
-| Transitions | Random selection between clips |
-
-### Pipeline Enhancement
-
-| Change | Details |
-|--------|---------|
-| Phase 6 | Kdenlive project generation added |
-| Auto Phase 6 | Runs automatically after Phase 5 |
-| Project naming | `Shorts Project_<timestamp>.kdenlive` |
-| All assets | Clips, TTS, scripts, subtitles included |
 
 ---
 

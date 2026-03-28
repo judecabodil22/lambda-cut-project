@@ -249,13 +249,24 @@ def generate_kdenlive_project(workspace):
     # Pattern: <chain ... </chain> blocks
     chain_pattern = re.compile(r'(<chain[^>]*>.*?</chain>)', re.DOTALL)
     
-    def keep_chain(match):
+    # First pass: identify which chains to keep
+    chains_to_keep = set()
+    for match in chain_pattern.finditer(content):
         chain_content = match.group(1)
-        # Find resource path in this chain
         resource_match = re.search(r'<property name="resource">([^<]+)</property>', chain_content)
         if resource_match:
             resource_path = resource_match.group(1)
-            # Keep chain only if file exists
+            if os.path.exists(resource_path):
+                chain_id_match = re.search(r'id="(chain\d+)"', chain_content)
+                if chain_id_match:
+                    chains_to_keep.add(chain_id_match.group(1))
+    
+    # Remove chains that reference non-existent files
+    def keep_chain(match):
+        chain_content = match.group(1)
+        resource_match = re.search(r'<property name="resource">([^<]+)</property>', chain_content)
+        if resource_match:
+            resource_path = resource_match.group(1)
             if os.path.exists(resource_path):
                 return chain_content
             else:
@@ -263,6 +274,46 @@ def generate_kdenlive_project(workspace):
         return chain_content
     
     content = chain_pattern.sub(keep_chain, content)
+    
+    # Remove playlist entries that reference removed chains
+    # Pattern: <entry ... producer="chainX" ... /> (self-closing or not)
+    entry_pattern = re.compile(r'<entry[^>]*producer="(chain\d+)"[^>]*/?>')
+    
+    def keep_entry(match):
+        chain_ref = match.group(1)
+        if chain_ref in chains_to_keep:
+            return match.group(0)
+        else:
+            return ''
+    
+    content = entry_pattern.sub(keep_entry, content)
+    
+    # Debug: count entries after removal
+    entry_count = content.count('<entry')
+    print(f"DEBUG: Entry count after removal: {entry_count}")
+    
+    # Clean up ALL orphaned entries in playlists
+    # Pattern: </entry> (with content) followed by <property>...</entry> (empty entry)
+    lines = content.split('\n')
+    result_lines = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        
+        # Look for: </entry> then empty line then <property...>...</entry> (empty entry block)
+        if line.strip() == '</entry>' and i + 3 < len(lines):
+            next_line = lines[i + 1].strip()
+            next_next_line = lines[i + 2].strip()
+            next_next_next_line = lines[i + 3].strip() if i + 3 < len(lines) else ''
+            if next_line == '' and 'kdenlive:id' in next_next_line and next_next_next_line == '</entry>':
+                # Skip lines i+1, i+2, i+3 (empty + orphan + closing)
+                i += 4
+                continue
+        
+        result_lines.append(line)
+        i += 1
+    
+    content = '\n'.join(result_lines)
     
     with open(project_file, 'w') as f:
         f.write(content)
