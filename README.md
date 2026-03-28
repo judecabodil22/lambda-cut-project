@@ -15,116 +15,15 @@ Each phase can be run independently or skipped. Checkpointing skips existing out
 
 The `.gitignore` file is configured to exclude sensitive files. When cloning this repository, you must set up your own configuration files.
 
-## What's New in 2.5.19
+For a detailed changelog, see [CHANGELOG.md](./CHANGELOG.md).
 
-- **Bug fixes** — Telegram HTTP 400 errors fixed, stable-ts command updated, VAD TorchScript error handling added, HTML tags in SRT files removed
-
-## What's New in 2.5.18
+## Recent Highlights
 
 - **Phase 6 removed** — Kdenlive automation disabled due to persistent XML issues
-
-## What's New in 2.5.17
-
-- **Kdenlive crash fix** — fixed by removing playlist entries referencing removed chains
-
-## What's New in 2.5.16
-
-- **Kdenlive crash fix** — fixed by removing orphaned playlist entries
-
-## What's New in 2.5.15
-
-- **SRT generation fix** — use stable-ts CLI with proper output format
-
-## What's New in 2.5.14
-
-- **stable-ts command fix** — corrected argument order
-
-## What's New in 2.5.13
-
-- **stable-ts command update** — updated CLI command
-
-## What's New in 2.5.12
-
-- **stable-ts CLI fix** — fixed command for SRT generation
-
-## What's New in 2.5.11
-
-- **Kdenlive templates** — moved to templates/ folder
-
-## What's New in 2.5.10
-
-- **Kdenlive markers fix** — use script titles from workspace
-
-## What's New in 2.5.9
-
-- **Kdenlive crash fix** — removed references to non-existent TTS/shorts files
-
-## What's New in 2.5.8
-
-- **Kdenlive path fix** — fixed hardcoded source directory paths
-
-## What's New in 2.5.7
-
-- **Restart flag reset** — reset flag after restart to prevent spam
-- **Global declaration fix** — fixed syntax error
-
-## What's New in 2.5.6
-
-- **Restart mechanism** — changed from os.execv to subprocess.Popen for reliability
-
-## What's New in 2.5.5
-
-- **`/restart_listener` command** — restart listener via Telegram
-- **Systemd always-restart** — listener auto-restarts after any exit
-
-## What's New in 2.5.4
-
-- **Listener restart fix** — wait for update thread to complete before checking flag
-
-## What's New in 2.5.3
-
-- **Listener restart fix** — moved os.execv from daemon thread to main polling loop
-
-## What's New in 2.5.2
-
-- **Update path fix** — updates now correctly target project root instead of `workflows/` subdirectory
-- **Listener restart fix** — fixed os.execv call to work reliably
-- **`/run_local` command** — process local recordings instead of YouTube
-
-## What's New in 2.5.1
-
-- **Update system fix** — fixed directory structure issue during updates
-- **QA process** — all new features must be tested before deployment
-
-## What's New in 2.5
-
-- **`/run_local` command** — process local recordings instead of YouTube (one-time override)
-- **`/set_recording_path`** — change recording directory
-- **`/source`** — show current recording path
-
-## What's New in 2.4
-
+- **Local recording integration** — `/run_local`, `/set_recording_path`, `/source` commands for processing local videos
+- **Auto‑update system** — automatic update detection, backup, and rollback
 - **OBS recording workflow** — record locally while streaming for maximum quality
-- **Optimal settings documented** — streaming and recording settings for 1440p
-- **Fragmented MP4 format** — crash recovery for long streams
-
-## What's New in 2.3
-
-- **Auto-update system** — automatic update detection and installation from GitHub
-- **Backup system** — automatic backup before update (keeps up to 2 previous versions)
-- **Release notes** — view release notes before updating
-- **`/update` command** — check for and install updates via Telegram
-- **`/version` command** — show current version and update status
-- **`/status` enhanced** — now shows version and update availability
-
-## What's New in 2.2
-
-- **Listener auto-management** — starting a new listener automatically stops any existing one
-- **Systemd auto-update** — listener automatically updates systemd service to point to its installation directory
-- **Listener status in /status** — shows listener running status, PID, and working directory
-- **Logs include timestamps** — `/logs` output now includes date and time for each entry
-- **Highest quality download** — downloads best available quality (4K/8K) instead of limiting to 1440p
-- **High quality clips** — Phase 4 VAAPI fixed to use proper quality settings (`-rc_mode CQP -global_quality 10 -compression_level 1`). CPU fallback improved to CRF 18
+- **Telegram bot control** — full command set: `/run_pipeline`, `/run_phase`, `/skip_phase`, `/set_voice`, `/set_style`, `/config`, `/status`, `/logs`, and more
 
 ## Features
 
