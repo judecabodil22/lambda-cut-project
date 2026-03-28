@@ -2,6 +2,46 @@
 
 All notable changes to this project documented here.
 
+## 2.5.15 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| SRT generation | Use stable-ts CLI with --output_format srt (clean output without HTML tags) |
+
+---
+
+## 2.5.14 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| stable-ts command | Fixed argument order: `--word_level false --device cpu --language en` |
+
+---
+
+## 2.5.13 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| stable-ts command | Updated stable-ts CLI command: `--word_level false --language en --device cpu` |
+
+---
+
+## 2.5.12 — 2026-03-28
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| stable-ts command | Fixed stable-ts CLI command for SRT generation |
+
+---
+
 ## 2.5.11 — 2026-03-28
 
 ### Features
