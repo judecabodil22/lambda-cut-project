@@ -522,14 +522,8 @@ def phase_tts(duration, num_hours):
 
         if not os.path.exists(srt):
             log(f"   Generating SRT for tts_{padded}.wav...")
-            try:
-                import stable_whisper
-                model = stable_whisper.load_model("base")
-                result = model.transcribe(wav, language="en")
-                result.to_srt_vtt(srt)
-            except ImportError:
-                run(["stable-ts", wav, "--output_format", "srt",
-                     "--word_timestamps", "false", "--language", "en"], check=False)
+            run(["stable-ts", wav, "--word_level", "false", "--device", "cpu", 
+                 "--language", "en", "--output_format", "srt"], check=False)
             log(f"   tts_{padded}.srt created" if os.path.exists(srt) else
                 log_error(f"   SRT failed for tts_{padded}"))
         else:
