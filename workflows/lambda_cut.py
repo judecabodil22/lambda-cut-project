@@ -1042,7 +1042,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
             tg_send(f"""🔔 Update Available: v{remote_ver}
 
 <b>Release Notes:</b>
-{release_notes}
+{html.escape(release_notes)}
 
 <b>This will:</b>
 1. Backup current installation (up to 2 backups)

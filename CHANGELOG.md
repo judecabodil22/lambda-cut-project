@@ -253,7 +253,7 @@ All notable changes to this project documented here.
 
 | Feature | Details |
 |---------|---------|
-| Recording path | `/home/alph4r1us/Videos/Recordings/` |
+| Recording path | `~/Videos/Recordings/` (configurable) |
 | Recording format | Fragmented MP4 (crash recovery) |
 | Recording quality | CQP 16 (visually lossless) |
 | Recording resolution | 1440p @ 60fps |
@@ -271,7 +271,7 @@ All notable changes to this project documented here.
 
 ### Planned Integration
 
-- Lambda Cut will watch `/home/alph4r1us/Videos/Recordings/` for new files
+- Lambda Cut will watch `~/Videos/Recordings/` for new files
 - Auto-select latest recording for processing
 - No manual file selection needed
 - Skip YouTube VOD download (use local recording)

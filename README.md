@@ -113,7 +113,7 @@ For maximum quality, record locally while streaming. This provides higher qualit
 | Level | Auto | |
 | Keyframe Interval | 2 seconds | |
 | File Format | Fragmented MP4 | Crash recovery |
-| Recording Path | `/home/alph4r1us/Videos/Recordings/` | |
+| Recording Path | `~/Videos/Recordings/` (configurable via `/set_recording_path`) | |
 
 ### Why Record Locally?
 
@@ -125,8 +125,10 @@ For maximum quality, record locally while streaming. This provides higher qualit
 ### Recording Path
 
 ```
-/home/alph4r1us/Videos/Recordings/
+~/Videos/Recordings/
 ```
+
+Configure via `/set_recording_path` command or `RECORDING_PATH` in `.env`.
 
 Lambda Cut will auto-detect new recordings in this directory.
 
