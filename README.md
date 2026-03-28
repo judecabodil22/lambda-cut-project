@@ -19,7 +19,6 @@ For a detailed changelog, see [CHANGELOG.md](./CHANGELOG.md).
 
 ## Recent Highlights
 
-- **Phase 6 removed** — Kdenlive automation disabled due to persistent XML issues
 - **Local recording integration** — `/run_local`, `/set_recording_path`, `/source` commands for processing local videos
 - **Auto‑update system** — automatic update detection, backup, and rollback
 - **OBS recording workflow** — record locally while streaming for maximum quality
@@ -36,7 +35,6 @@ For a detailed changelog, see [CHANGELOG.md](./CHANGELOG.md).
 | 3 | Scripts | AI-generated short scripts via Gemini |
 | 4 | Clips | Extract video clips based on scenes |
 | 5 | TTS | Generate narration audio + subtitles |
-| 6 | Kdenlive | **Removed** — Kdenlive automation disabled due to XML issues |
 
 ### Telegram Commands
 
