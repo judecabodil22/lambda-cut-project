@@ -285,25 +285,60 @@ def phase_transcribe(video):
     return json_file
 
 # ─── Phase 3: Scripts ─────────────────────────────────────────────────────────
-SCRIPT_PROMPT = """Rewrite the following transcript into a concise, engaging YouTube Shorts script in THIRD PERSON.
+SCRIPT_PROMPT = """You are a YouTube Shorts scriptwriter. Rewrite the following transcript into a short, spoken script.
 
-STYLE:
-- Third person ONLY (no "I", "we", "you")
-- Simple, direct sentences
-- No quotes from the transcript
-- Cause → Effect → Conclusion flow
-- Dark, mysterious story recap tone
+HARD RULES (never break these):
+- NO dialogue — never write what anyone "said", "told", "asked", or "replied"
+- NO first/second/third person narrator framing ("I saw", "the narrator says", "according to him")
+- NO quotation marks anywhere
+- NO parentheticals, stage directions, or annotations
+- NO markdown formatting — plain text only
+- NO phrases like "in conclusion", "to summarize", "the point is"
+- NO abbreviations or symbols — spell everything out ("number one" not "#1", "dollars" not "$")
+- Write ONLY facts and description as if narrating events directly
 
-STRUCTURE:
-1. Start with a HOOK (question that makes viewers want to comment)
-2. Describe the ACTION (what happens)
-3. End with another hook or cliffhanger
+HOOK PATTERNS (pick one per script, vary across scripts):
+1. Surprising fact: State something shocking that happened
+2. Challenge: "Nobody thought this was possible until..."
+3. Impossible question: Pose a scenario viewers can't resist answering
 
-REQUIREMENTS:
-- Title: "Script {num}: [ENGAGING clickbait title]"
-- Exactly 150 words maximum
-- No quotation marks
-- Make viewers want to comment their opinions
+ENGAGEMENT TRIGGERS (use at least one):
+- End with a question that begs a comment: "What would you do?" / "Drop your answer"
+- Create rewatch value: Reveal a detail early that only makes sense at the end
+- Use "Wait for it..." or "Here's why..." sparingly — only when earned
+
+EMOTIONAL ARC (mandatory):
+Hook → Mystery/Tension → Rising stakes → Climax → Gut-punch ending
+
+PACING FOR TTS:
+- Short punchy sentences build tension (5-10 words)
+- One slightly longer sentence to let the listener breathe
+- Then snap back to short for the ending
+- End on the hardest-hitting line — last sentence is the most memorable
+- Use periods to create natural pauses. Each sentence is one breath.
+
+TTS-SAFE LANGUAGE:
+- No words the AI will mispronounce: spell out numbers, avoid unusual names without context
+- No run-on sentences — if it's hard to say aloud, rewrite it
+- Read your script out loud. If you stumble, simplify.
+
+OUTPUT FORMAT (strict):
+Line 1: TITLE: [6-10 word title, no punctuation, no clickbait caps]
+Line 2: (blank)
+Line 3+: The spoken script — pure text, no labels, no headers, no formatting
+
+TITLE RULES:
+- 6-10 words maximum
+- No ALL CAPS words
+- No exclamation marks or question marks
+- Hint at the mystery without spoiling the ending
+
+MAXIMUM: 150 words for the script body (excluding title).
+
+EXAMPLE OUTPUT:
+TITLE: The Night The Ground Swallowed A Highway
+
+Nobody expected the ground to open up on a Tuesday night. A section of Highway 12 just vanished. A forty-foot sinkhole swallowed three cars and a gas station sign. Witnesses described a deep rumble that lasted six seconds. Then silence. The sinkhole kept growing. By morning, it had consumed half a city block. Engineers discovered a forgotten mine shaft from 1923 directly beneath the road. The city had built on top of it for decades. Thirty families were evacuated before the second collapse. The foreman said they were lucky. The next section of road would have been a school zone. What would you do if the ground opened up right now?
 
 Transcript:
 {transcript}"""
@@ -333,7 +368,7 @@ def _gemini_script(text, script_num, keys_file):
     prompt = SCRIPT_PROMPT.format(num=script_num, transcript=text[:3000])
     body = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 512}
+        "generationConfig": {"temperature": 0.5, "maxOutputTokens": 768}
     }).encode()
 
     start = (script_num - 1) % len(keys)
@@ -601,6 +636,12 @@ def _tts_api(text, out_pcm, voice, style):
         with open(out_pcm, "wb") as f:
             f.write(base64.b64decode(audio))
 
+def _strip_title(script_text):
+    lines = script_text.strip().split("\n")
+    if lines and lines[0].startswith("TITLE:"):
+        return "\n".join(lines[1:]).strip()
+    return script_text.strip()
+
 def phase_tts(duration, num_hours):
     voice = env("TTS_VOICE", "Algenib")
     if not voice:
@@ -642,7 +683,8 @@ def phase_tts(duration, num_hours):
                     continue
 
                 pcm = os.path.join(TTS_DIR, f"tts_{padded}.pcm")
-                _tts_api(txt, pcm, voice, style)
+                tts_text = _strip_title(txt)
+                _tts_api(tts_text, pcm, voice, style)
 
                 if not os.path.exists(pcm):
                     log_error(f"   TTS API call failed for script {i}")
