@@ -62,6 +62,8 @@ The `.gitignore` file is configured to exclude sensitive files. When cloning thi
 
 For a detailed changelog, see [CHANGELOG.md](./CHANGELOG.md).
 
+For troubleshooting help, see [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md).
+
 ## Recent Highlights
 
 - **Local recording integration** — `/run_local`, `/set_recording_path`, `/source` commands for processing local videos
