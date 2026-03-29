@@ -1,4 +1,4 @@
-# Lambda Cut 2.5.19
+# Lambda Cut 2.5.20
 
 Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
 

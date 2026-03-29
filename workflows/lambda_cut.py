@@ -899,56 +899,7 @@ def process_cmd(text, chat_id):
 
         tg_send(f"Listener: {listener_status}\nPID: {listener_pid}\nDir: {listener_dir}\nVersion: v{local_ver}\n\nPipeline: {pipeline_status}{update_status}")
 
-    elif cmd == "/logs":
-        if os.path.exists(LOG_FILE):
-            with open(LOG_FILE) as f:
-                raw = f.readlines()[-80:]
 
-            # Filter: keep only intentional log() lines (timestamped), discard subprocess noise
-            ts_re = re.compile(r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] ")
-            noise_re = re.compile(r"^(\d+:|:\d+|\[)")
-            entries = []
-            for line in raw:
-                line = line.strip()
-                if not line or not ts_re.match(line):
-                    continue
-                # Extract timestamp
-                ts_match = ts_re.match(line)
-                ts = ts_match.group() if ts_match else ""
-                msg = ts_re.sub("", line)
-                # Skip internal-only lines and raw yt-dlp noise
-                if msg.startswith("   Attempt") or msg.startswith("   Trying key"):
-                    continue
-                if noise_re.match(msg):
-                    continue
-                # Shorten file paths
-                msg = re.sub(r"/[^\s,]+/([^/\s,]+\.\w+)", r"\1", msg)
-                # Emoji prefix
-                lo = msg.lower()
-                if "error" in lo or "failed" in lo:
-                    prefix = "\u274c"
-                elif "complete" in lo or "created" in lo:
-                    prefix = "\u2705"
-                elif "skipping" in lo:
-                    prefix = "\u23ed\ufe0f"
-                elif "downloading" in lo or "transcribing" in lo or "generating" in lo:
-                    prefix = "\u23f3"
-                else:
-                    prefix = "\u2022"
-                # Bold phase labels (Markdown)
-                msg = re.sub(r"(Phase \d[:\s])", r"*\1*", msg)
-                msg = re.sub(r"(Pipeline Complete)", r"*\1*", msg)
-                # Escape Markdown special chars in content
-                msg = msg.replace("`", "\\`")
-                entries.append(f"{ts} {prefix} {msg}")
-
-            if entries:
-                txt = "\n".join(entries[-25:])[:1500]
-                tg_send(f"\U0001f4cb *Pipeline Logs*\n\n{txt}", parse_mode="Markdown")
-            else:
-                tg_send("\U0001f4cb No pipeline logs yet.")
-        else:
-            tg_send("\U0001f4cb No logs found.")
 
     elif cmd == "/help":
         tg_send("""<b>Lambda Cut</b> — YouTube Shorts Pipeline
@@ -975,8 +926,6 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 
 /config     - Settings and file counts
 /status     - Listener and pipeline status
-/logs       - Pipeline logs
-/clear_logs - Clear pipeline logs
 
 /version    - Show current version
 /update     - Check for and install updates
@@ -1007,14 +956,6 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
     elif cmd == "/cleanup":
         count = cleanup_all_files()
         tg_send(f"Deleted {count} file(s) from all output directories.")
-
-    elif cmd == "/clear_logs":
-        if os.path.exists(LOG_FILE):
-            with open(LOG_FILE, "w") as f:
-                f.write("")
-            tg_send("Pipeline logs cleared.")
-        else:
-            tg_send("No logs to clear.")
 
     elif cmd == "/version":
         script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -2,6 +2,18 @@
 
 All notable changes to this project documented here.
 
+## 2.5.20 — 2026-03-29
+
+### Bug Fixes & Improvements
+
+| Change | Details |
+|--------|---------|
+| Telegram HTML parsing | Fixed by escaping release_notes with html.escape() to prevent parse errors |
+| Removed /logs command | Command removed due to persistent errors from log noise |
+| Removed /clear_logs command | Command removed (no longer needed without /logs) |
+
+---
+
 ## 2.5.19 — 2026-03-28
 
 ### Bug Fixes
