@@ -13,6 +13,8 @@ YouTube Playlist → Download → Transcribe → AI Scripts → Video Clips → 
 
 Each phase can be run independently or skipped. Checkpointing skips existing outputs.
 
+> **Note:** Lambda Cut generates the raw materials (clips, audio, subtitles) for your shorts. You'll need to combine them in video editing software like Kdenlive, DaVinci Resolve, or Premiere Pro.
+
 ## ⚡ Quick Start
 
 ```bash
@@ -34,6 +36,19 @@ python3 workflows/lambda_cut.py listen
 ```
 
 Then use Telegram commands to control the pipeline!
+
+## 📁 What You Get
+
+After running the pipeline, you'll have:
+
+| Folder | Contents | Use |
+|--------|----------|-----|
+| `shorts/` | Video clips (MP4) | Import into video editor |
+| `tts/` | Narration audio (WAV) + subtitles (SRT) | Add to video editor timeline |
+| `scripts/` | AI-generated scripts | Use as narration reference |
+| `transcripts/` | Full video transcripts | For reference |
+
+**Next step:** Import these files into Kdenlive, DaVinci Resolve, or your preferred video editor to create your final shorts!
 
 ## 📋 Prerequisites
 
@@ -198,7 +213,6 @@ lambda-cut-project/
 ├── tts/                      # Generated TTS audio
 ├── transcripts/              # Video transcripts
 ├── streams/                  # Downloaded YouTube videos
-├── output/                   # Kdenlive project files
 ├── backups/                  # Automatic backups
 ├── .env.example              # Configuration template
 ├── VERSION                   # Current version

@@ -77,8 +77,7 @@ lambda_cut/
 ├── transcripts/     # Generated transcripts
 ├── scripts/         # AI-generated scripts
 ├── shorts/          # Final video clips
-├── tts/            # Generated audio + subtitles
-└── output/         # Kdenlive projects (legacy)
+└── tts/            # Generated audio + subtitles
 ```
 
 ## Systemd Service
