@@ -1,7 +1,7 @@
 # Lambda Cut Open-Source Launch TODO
 
 ## Phase 1: Repository Polish (Week 1)
-- [ ] Security sweep: Ensure no API keys in history, validate `.gitignore`
+- [x] Security sweep: Ensure no API keys in history, validate `.gitignore`
 - [ ] Enhance README: Add badges, GIF demo, installation comparison table
 - [ ] Create `docs/` directory with detailed guides (troubleshooting, configuration)
 - [ ] GitHub templates: Issue/PR templates, `CONTRIBUTING.md`
@@ -80,5 +80,12 @@
 
 ---
 
-**Current Status:** Planning phase - items to be prioritized and implemented.
-**Next Immediate Actions:** Start with Phase 1 & 2 (repository polish + installation simplification).
+## Recent Updates (March 2026)
+
+- **Security fixes:** Removed exposed API keys from git history, cleaned git history
+- **Telegram fix:** HTML parsing error fixed (release notes now escaped)
+- **Documentation:** Hardcoded paths replaced with ~/ or configurable options
+- **Pipeline:** Phase 6 (Kdenlive) removed from documentation and code
+
+**Current Status:** Phase 1 in progress - repository polish
+**Next Immediate Actions:** Continue with Phase 1 (enhance README, create docs/, GitHub templates)
