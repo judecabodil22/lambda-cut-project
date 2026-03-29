@@ -1,4 +1,8 @@
-# Lambda Cut 2.5.20
+# Lambda Cut 2.5.21
+
+[![Version](https://img.shields.io/badge/version-2.5.21-blue.svg)](./VERSION)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Platform: Linux](https://img.shields.io/badge/Platform-Linux-purple.svg)](https://archlinux.org/)
 
 Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
 
@@ -8,6 +12,47 @@ YouTube Playlist → Download → Transcribe → AI Scripts → Video Clips → 
 ```
 
 Each phase can be run independently or skipped. Checkpointing skips existing outputs.
+
+## ⚡ Quick Start
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/judecabodil22/lambda-cut-project.git
+cd lambda-cut-project
+
+# 2. Copy environment template
+cp .env.example .env
+
+# 3. Edit .env with your API keys
+nano .env
+
+# 4. Run the onboarding wizard
+python3 workflows/lambda_cut.py onboard
+
+# 5. Start the Telegram listener
+python3 workflows/lambda_cut.py listen
+```
+
+Then use Telegram commands to control the pipeline!
+
+## 📋 Prerequisites
+
+| Requirement | Details |
+|-------------|---------|
+| Python | 3.10+ |
+| FFmpeg | For video processing |
+| GPU | Optional but recommended (VAAPI for hardware encoding) |
+| Telegram Bot | Get from @BotFather |
+| Gemini API Key | Get from Google AI Studio |
+
+### Required Environment Variables
+
+```env
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+GEMINI_API_KEY=your_gemini_key
+PLAYLIST_URL=https://youtube.com/playlist?list=...
+```
 
 ## ⚠️ Security Notice
 
@@ -22,7 +67,7 @@ For a detailed changelog, see [CHANGELOG.md](./CHANGELOG.md).
 - **Local recording integration** — `/run_local`, `/set_recording_path`, `/source` commands for processing local videos
 - **Auto‑update system** — automatic update detection, backup, and rollback
 - **OBS recording workflow** — record locally while streaming for maximum quality
-- **Telegram bot control** — full command set: `/run_pipeline`, `/run_phase`, `/skip_phase`, `/set_voice`, `/set_style`, `/config`, `/status`, `/logs`, and more
+- **Telegram bot control** — full command set: `/run_pipeline`, `/run_phase`, `/skip_phase`, `/set_voice`, `/set_style`, `/config`, `/status`, `/debug`, and more
 
 ## Features
 
@@ -56,7 +101,7 @@ For a detailed changelog, see [CHANGELOG.md](./CHANGELOG.md).
 | `/update` | Check for updates |
 | `/stop_listener` | Stop the listener |
 | `/stop_pipeline` | Stop running pipeline |
-| `/logs` | Show pipeline logs |
+| `/debug` | Show recent debug log entries |
 
 ### CLI Commands
 
