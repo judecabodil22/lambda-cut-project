@@ -11,6 +11,7 @@ from update_manager import (
     get_release_notes,
     check_for_updates,
     perform_update,
+    cleanup_old_backups,
 )
 # ─── Paths ────────────────────────────────────────────────────────────────────
 DEFAULT_WORKSPACE = os.path.expanduser("~/lambda_cut")
@@ -213,8 +214,8 @@ def phase_transcribe(video):
         import stable_whisper
         model = stable_whisper.load_model("base")
         result = model.transcribe(video, language="en", vad=True)
-        result.to_srt_vtt(os.path.join(TRANSCRIPTS_DIR, f"{basename}.srt"))
-        result.save_as_json(os.path.join(TRANSCRIPTS_DIR, f"{basename}.json"))
+        result.to_srt_vtt(os.path.join(TRANSCRIPTS_DIR, f"{basename}.srt"))  # type: ignore[attr-defined]
+        result.save_as_json(os.path.join(TRANSCRIPTS_DIR, f"{basename}.json"))  # type: ignore[attr-defined]
     except Exception as e:
         log(f"stable-whisper failed: {e}, falling back to stable-ts")
         run(["stable-ts", "-y", video, "--output_dir", TRANSCRIPTS_DIR,
@@ -956,6 +957,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 /stop_pipeline   - Stop running pipeline
 /delete_partial  - Delete incomplete files
 /cleanup         - Delete all generated files
+/clean_backups  - Clean old backup versions
 
 /help - This message""", parse_mode="HTML")
 
@@ -978,6 +980,10 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
     elif cmd == "/cleanup":
         count = cleanup_all_files()
         tg_send(f"Deleted {count} file(s) from all output directories.")
+
+    elif cmd == "/clean_backups":
+        cleanup_old_backups(WORKSPACE)
+        tg_send("Old backups cleaned up.")
 
     elif cmd == "/version":
         script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

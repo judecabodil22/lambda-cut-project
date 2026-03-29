@@ -59,13 +59,41 @@ All configuration is done via the `.env` file.
 
 ## TTS Voices
 
-Available Gemini TTS voices:
+Available Gemini TTS voices (default: Zephyr):
 
-- **Aoede** - High pitch, warm, articulate
-- **Zephyr** - Youthful, bright, high energy
-- **Puck** - Male voice, authoritative
-- **Kore** - Female, helpful, moderate energy
-- **Enceladus** - Male, confident
+### Female Voices
+
+| Voice | Characteristics |
+|-------|----------------|
+| **Aoede** | High pitch (206 Hz), warm, articulate, thoughtful |
+| **Zephyr** | High pitch, youthful, bright, high energy |
+| **Kore** | Moderate pitch, helpful, moderate energy |
+| **Despina** | Energetic, enthusiastic, cheerful |
+| **Callirrhoe** | Warm, conversational, helpful |
+| **Pulcherrima** | Moderate energy, clear, professional |
+| **Algenib** | Lower female, smooth, calm |
+
+### Male Voices
+
+| Voice | Characteristics |
+|-------|----------------|
+| **Puck** | Lower pitch, authoritative, confident |
+| **Enceladus** | Moderate pitch, confident, clear |
+| **Scheat** | Lower male, warm, steady |
+| **Achernar** | Deep male, strong, authoritative |
+
+### Style Instructions
+
+You can also set a style instruction to customize how the TTS speaks:
+
+```
+/set_style Speak in a thoughtful, soft-spoken manner with genuine warmth
+```
+
+Or use bracket tags for quick styling:
+```
+[thoughtful][soft][genuine]
+```
 
 ## Directory Structure
 

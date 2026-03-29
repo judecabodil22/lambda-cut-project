@@ -1,0 +1,13 @@
+# Lambda Cut Requirements
+# Python dependencies for Lambda Cut - YouTube Shorts Pipeline
+
+# Core
+yt-dlp>=2024.1.0
+
+# Transcription
+stable-ts>=2.0.0
+stable-whisper>=2.0.0
+
+# Optional: For better GPU acceleration
+# torch>=2.0.0
+# torchaudio>=2.0.0

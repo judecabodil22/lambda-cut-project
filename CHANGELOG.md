@@ -2,6 +2,27 @@
 
 All notable changes to this project documented here.
 
+## 2.6.0 — 2026-03-29
+
+### New Features
+
+| Change | Details |
+|--------|---------|
+| Added /debug command | Simple debug log viewer to replace /logs functionality |
+| Added /clean_backups command | Clean old backup versions via Telegram |
+| Added requirements.txt | Documented Python dependencies |
+| Added GitHub Actions | Auto-lint on PRs |
+| Enhanced docs | Added TTS voices reference, clarified output |
+
+### Improvements
+
+| Change | Details |
+|--------|---------|
+| Fixed LSP type errors | Added type ignore comments for stable_whisper |
+| Transcription checkpointing | Already exists - skips if transcript exists |
+
+---
+
 ## 2.5.21 — 2026-03-29
 
 ### Bug Fixes & Improvements
