@@ -1,10 +1,10 @@
 # Lambda Cut 2.6.0
 
-[![Version](https://img.shields.io/badge/version-2.5.21-blue.svg)](./VERSION)
+[![Version](https://img.shields.io/badge/version-2.6.0-blue.svg)](./VERSION)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-purple.svg)](https://archlinux.org/)
 
-Automated pipeline to convert long-form YouTube streams into shorts with AI-generated scripts and TTS narration.
+Automated pipeline that extracts video clips from long-form YouTube streams and generates AI-powered TTS narration scripts, producing all the raw materials you need for creating shorts in video editing software.
 
 ```
 YouTube Playlist → Download → Transcribe → AI Scripts → Video Clips → TTS Audio + Subtitles
