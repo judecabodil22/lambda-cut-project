@@ -5,16 +5,13 @@ Handles version checking, updates, and backups.
 """
 
 import os
-import sys
 import json
 import shutil
 import zipfile
 import tempfile
-import subprocess
 import urllib.request
 import urllib.error
 from datetime import datetime
-from pathlib import Path
 
 
 # ==============================
@@ -301,7 +298,7 @@ def perform_update(project_root):
     print(f"Updating from v{local_version} to v{remote_version}...")
     
     # Create backup
-    backup_path = create_backup(project_root, local_version)
+    create_backup(project_root, local_version)
     
     # Clean up old backups
     cleanup_old_backups(project_root)

@@ -2,6 +2,46 @@
 
 All notable changes to this project documented here.
 
+## 2.8.0 — 2026-03-29
+
+### New Features
+
+| Change | Details |
+|--------|---------|
+| System keychain support | API keys now stored in system keychain instead of plain text files |
+| Added keychain_manager.py | New module for secure key storage |
+| Keychain storage for Gemini | Multiple API keys stored securely |
+| Keychain for Telegram | Bot token and chat ID stored securely |
+| Fallback to files | If keychain unavailable, falls back to .env and gemini_keys.txt |
+
+### Improvements
+
+| Change | Details |
+|--------|---------|
+| Better error handling | Added validation and error handling to all pipeline phases |
+| Phase 1 (Download) | Added PLAYLIST_URL and cookies validation, video file check |
+| Phase 2 (Transcribe) | Added video file validation, better fallback logging |
+| Phase 3 (Scripts) | Added transcript and API keys validation, counts generated scripts |
+| Phase 4 (Clips) | Added video/transcript validation, ffmpeg check, duration validation |
+| Phase 5 (TTS) | Added voice and API key validation, better error tracking |
+
+### Changes
+
+| Change | Details |
+|--------|---------|
+| Removed Phase 6 YouTube Upload | Manual upload preferred for more control |
+| Removed /upload command | Use YouTube web UI for uploads |
+
+### New Features (retained from 2.7.0)
+
+| Change | Details |
+|--------|---------|
+| Added GitHub Actions CI | Python-based workflow with ruff linting and syntax check |
+| Added CONTRIBUTING.md | Contributor guide for developers |
+| Configurable clips per hour | CLIPS_PER_HOUR env var + /set_clips command |
+
+---
+
 ## 2.6.0 — 2026-03-29
 
 ### New Features

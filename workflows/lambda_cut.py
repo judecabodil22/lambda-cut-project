@@ -6,12 +6,16 @@ Combines: lambda_cut.sh, telegram_listener.sh, generate_script.sh, onboard.sh
 import argparse, base64, glob, html, json, os, re, shutil, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from update_manager import (
     get_local_version,
-    get_remote_version,
-    is_update_available,
     get_release_notes,
     check_for_updates,
     perform_update,
     cleanup_old_backups,
+)
+from keychain_manager import (
+    get_gemini_keys,
+    get_service_password,
+    set_gemini_keys,
+    set_service_password,
 )
 # ─── Paths ────────────────────────────────────────────────────────────────────
 DEFAULT_WORKSPACE = os.path.expanduser("~/lambda_cut")
@@ -63,6 +67,16 @@ def load_env():
 ENV = load_env()
 
 def env(key, default=""):
+    keychain_map = {
+        "GEMINI_API_KEY": "gemini-api-key",
+        "TELEGRAM_BOT_TOKEN": "telegram-bot-token",
+        "TELEGRAM_CHAT_ID": "telegram-chat-id",
+    }
+    if key in keychain_map:
+        keychain_key = keychain_map[key]
+        keychain_value = get_service_password(keychain_key)
+        if keychain_value:
+            return keychain_value
     return ENV.get(key, default)
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
@@ -180,14 +194,30 @@ def phase_download():
     log("Phase 1: Downloading 1440p stream...")
     notify("Phase 1 Started: Downloading video...")
 
+    playlist_url = env("PLAYLIST_URL")
+    if not playlist_url:
+        log_error("Phase 1 Failed: PLAYLIST_URL not configured")
+        notify("Phase 1 Failed: PLAYLIST_URL not set in .env")
+        set_status("Phase 1 FAILED")
+        raise RuntimeError("PLAYLIST_URL not configured")
+
+    cookies_ok = run(["yt-dlp", "--cookies-from-browser", "chrome", "--dump-single-json", "https://youtube.com"], check=False)
+    if cookies_ok.returncode != 0:
+        log_error("Phase 1 Failed: Chrome cookies not available. Run 'yt-dlp --cookies-from-browser chrome --dummy https://youtube.com' to create cookies.")
+        notify("Phase 1 Failed: Chrome cookies not available")
+        set_status("Phase 1 FAILED")
+        raise RuntimeError("Chrome cookies not available")
+
     def do_dl():
         playlist_index = env("PLAYLIST_INDEX", "1")
         r = run(["yt-dlp", "--playlist-items", playlist_index,
                  "--cookies-from-browser", "chrome",
                  "-f", "bestvideo+bestaudio",
                  "-o", f"{STREAMS_DIR}/%(title)s.%(ext)s",
-                 env("PLAYLIST_URL")])
+                 playlist_url])
         log(r.stdout[-500:] if r.stdout else "")
+        if r.returncode != 0 and r.stderr:
+            log_error(f"yt-dlp error: {r.stderr[-300:]}")
 
     if not retry(do_dl, 3, 10, "Download video"):
         log_error("Phase 1 failed after 3 attempts")
@@ -195,11 +225,24 @@ def phase_download():
         set_status("Phase 1 FAILED")
         raise RuntimeError("Phase 1 failed")
 
+    video = find_video()
+    if not video:
+        log_error("Phase 1 Failed: No video file found after download")
+        notify("Phase 1 Failed: No video downloaded")
+        set_status("Phase 1 FAILED")
+        raise RuntimeError("No video found after download")
+
     set_status("Phase 1 Complete")
     notify("Phase 1 Complete: Video downloaded")
 
 # ─── Phase 2: Transcribe ──────────────────────────────────────────────────────
 def phase_transcribe(video):
+    if not video or not os.path.exists(video):
+        log_error("Phase 2 Failed: Video file not found")
+        notify("Phase 2 Failed: Video file not found")
+        set_status("Phase 2 FAILED")
+        raise RuntimeError("Video file not found")
+
     basename = os.path.splitext(os.path.basename(video))[0]
     json_file = os.path.join(TRANSCRIPTS_DIR, f"{basename}.json")
 
@@ -210,20 +253,31 @@ def phase_transcribe(video):
 
     set_status("Phase 2: Transcribing...")
     log("Phase 2: Transcribing via stable-ts...")
+    
     try:
         import stable_whisper
+        log("Using stable-whisper for transcription...")
         model = stable_whisper.load_model("base")
         result = model.transcribe(video, language="en", vad=True)
         result.to_srt_vtt(os.path.join(TRANSCRIPTS_DIR, f"{basename}.srt"))  # type: ignore[attr-defined]
         result.save_as_json(os.path.join(TRANSCRIPTS_DIR, f"{basename}.json"))  # type: ignore[attr-defined]
+        log("stable-whisper transcription complete")
     except Exception as e:
-        log(f"stable-whisper failed: {e}, falling back to stable-ts")
-        run(["stable-ts", "-y", video, "--output_dir", TRANSCRIPTS_DIR,
-             "--output_format", "srt,json", "--word_timestamps", "False",
-             "--vad", "True", "--language", "en"])
+        log(f"stable-whisper failed: {e}")
+        log("Falling back to stable-ts CLI...")
+        try:
+            r = run(["stable-ts", "-y", video, "--output_dir", TRANSCRIPTS_DIR,
+                     "--output_format", "srt,json", "--word_timestamps", "False",
+                     "--vad", "True", "--language", "en"], check=False)
+            if r.returncode != 0:
+                log_error(f"stable-ts CLI failed: {r.stderr[-300:] if r.stderr else 'Unknown error'}")
+        except Exception as ts_e:
+            log_error(f"stable-ts fallback also failed: {ts_e}")
 
     if not os.path.exists(json_file):
-        log_error("Phase 2: transcript file not created")
+        log_error("Phase 2 Failed: Transcript file not created")
+        notify("Phase 2 Failed: Transcription failed")
+        set_status("Phase 2 FAILED")
         raise RuntimeError("Transcription failed")
 
     notify("Phase 2 Complete: Transcript generated")
@@ -269,10 +323,12 @@ def _rate_limit():
         f.write(str(time.time()))
 
 def _gemini_script(text, script_num, keys_file):
-    with open(keys_file) as f:
-        keys = [l.strip() for l in f if l.strip()]
+    keys = get_gemini_keys()
+    if not keys and os.path.exists(keys_file):
+        with open(keys_file) as f:
+            keys = [l.strip() for l in f if l.strip()]
     if not keys:
-        raise RuntimeError("No API keys in gemini_keys.txt")
+        raise RuntimeError("No API keys in keychain or gemini_keys.txt")
 
     prompt = SCRIPT_PROMPT.format(num=script_num, transcript=text[:3000])
     body = json.dumps({
@@ -317,11 +373,24 @@ def _extract_hour(json_file, start, end):
     return "\n".join(parts)
 
 def phase_scripts(json_file, duration, num_hours):
+    if not json_file or not os.path.exists(json_file):
+        log_error("Phase 3 Failed: Transcript file not found")
+        notify("Phase 3 Failed: No transcript available")
+        set_status("Phase 3 FAILED")
+        raise RuntimeError("Transcript file not found")
+
+    if not os.path.exists(KEYS_FILE):
+        log_error("Phase 3 Failed: gemini_keys.txt not found")
+        notify("Phase 3 Failed: No API keys configured")
+        set_status("Phase 3 FAILED")
+        raise RuntimeError("gemini_keys.txt not found")
+
     set_status("Phase 3: Generating scripts...")
     log("Phase 3: Generating scripts (one per hour)...")
     notify(f"Phase 3 Started: Generating {num_hours} scripts...")
     delay = int(env("SCRIPT_DELAY", "300"))
 
+    scripts_generated = 0
     for i in range(1, num_hours + 1):
         padded = f"{i:03d}"
         h_start = (i - 1) * 3600
@@ -332,29 +401,41 @@ def phase_scripts(json_file, duration, num_hours):
             log(f"   Skipping script {i} (exists)")
             continue
 
-        log(f"   Processing hour {i}: {h_start}s - {h_end}s")
-        text = _extract_hour(json_file, h_start, h_end)
-        if not text:
-            log(f"   No transcript for hour {i}, skipping")
+        try:
+            log(f"   Processing hour {i}: {h_start}s - {h_end}s")
+            text = _extract_hour(json_file, h_start, h_end)
+            if not text:
+                log(f"   Warning: No transcript for hour {i}, skipping")
+                continue
+
+            script = _gemini_script(text[:3000], i, KEYS_FILE)
+            if script is None:
+                log(f"   Warning: All keys failed for hour {i}, using raw transcript")
+                script = text[:3000]
+
+            with open(out, "w") as f:
+                f.write(script)
+            wc = len(script.split())
+            log(f"   Script {i}: {wc} words")
+            scripts_generated += 1
+            set_status(f"Phase 3: Script {i}/{num_hours} generated")
+            notify(f"Script {i}/{num_hours} generated ({wc} words)")
+        except Exception as e:
+            log_error(f"   Error generating script {i}: {e}")
             continue
 
-        script = _gemini_script(text[:3000], i, KEYS_FILE)
-        if script is None:
-            log(f"   All keys failed for hour {i}, using raw transcript")
-            script = text[:3000]
-
-        with open(out, "w") as f:
-            f.write(script)
-        wc = len(script.split())
-        log(f"   Script {i}: {wc} words")
-        set_status(f"Phase 3: Script {i}/{num_hours} generated")
-        notify(f"Script {i}/{num_hours} generated ({wc} words)")
         if i < num_hours:
             log(f"   Waiting {delay}s")
             time.sleep(delay)
 
+    if scripts_generated == 0:
+        log_error("Phase 3 Failed: No scripts were generated")
+        notify("Phase 3 Failed: No scripts generated")
+        set_status("Phase 3 FAILED")
+        raise RuntimeError("No scripts generated")
+
     set_status("Phase 3 Complete")
-    notify(f"Phase 3 Complete: {num_hours} scripts generated")
+    notify(f"Phase 3 Complete: {scripts_generated} scripts generated")
 
 # ─── Phase 4: Clips ──────────────────────────────────────────────────────────
 def _extract_scenes(json_file, h_start, h_end):
@@ -407,14 +488,36 @@ def _extract_scenes(json_file, h_start, h_end):
         scenes.sort(key=lambda x: x["score"], reverse=True)
     except Exception as e:
         log_error(f"Scene extraction: {e}")
-    return scenes[:5]
+    max_clips = int(env("CLIPS_PER_HOUR", "5"))
+    return scenes[:max_clips]
 
 def phase_clips(video, json_file, duration, num_hours):
+    if not video or not os.path.exists(video):
+        log_error("Phase 4 Failed: Video file not found")
+        notify("Phase 4 Failed: Video file not found")
+        set_status("Phase 4 FAILED")
+        raise RuntimeError("Video file not found")
+
+    if not json_file or not os.path.exists(json_file):
+        log_error("Phase 4 Failed: Transcript file not found")
+        notify("Phase 4 Failed: No transcript available")
+        set_status("Phase 4 FAILED")
+        raise RuntimeError("Transcript file not found")
+
     set_status("Phase 4: Generating clips...")
     log("Phase 4: Generating clips (scene-based)...")
     notify("Phase 4 Started: Generating clips...")
     vaapi = os.path.exists("/dev/dri/renderD128")
+    log(f"   Encoding method: {'VAAPI' if vaapi else 'CPU (libx264)'}")
 
+    ffmpeg_check = run(["ffmpeg", "-version"], check=False)
+    if ffmpeg_check.returncode != 0:
+        log_error("Phase 4 Failed: ffmpeg not available")
+        notify("Phase 4 Failed: ffmpeg not installed")
+        set_status("Phase 4 FAILED")
+        raise RuntimeError("ffmpeg not available")
+
+    clips_generated = 0
     for i in range(1, num_hours + 1):
         h_start = (i - 1) * 3600
         h_end   = min(i * 3600, duration)
@@ -432,36 +535,51 @@ def phase_clips(video, json_file, duration, num_hours):
                 log(f"   Skipping {name} (exists)")
                 continue
 
-            s, e = int(sc["start"]), int(sc["end"])
-            dur  = e - s
-            log(f"   Hour {i}, scene {idx}: {s}s-{e}s ({dur}s)")
+            try:
+                s, e = int(sc["start"]), int(sc["end"])
+                dur  = e - s
+                if dur <= 0:
+                    log_error(f"   Skipping {name}: invalid duration ({dur}s)")
+                    continue
+                log(f"   Hour {i}, scene {idx}: {s}s-{e}s ({dur}s)")
 
-            if vaapi:
-                cmd = ["ffmpeg", "-y",
-                       "-vaapi_device", "/dev/dri/renderD128",
-                       "-ss", str(s), "-i", video, "-t", str(dur),
-                       "-vf", "format=nv12,hwupload",
-                       "-c:v", "h264_vaapi", "-rc_mode", "CQP", "-global_quality", "10",
-                       "-compression_level", "1",
-                       "-af", "loudnorm",
-                       "-c:a", "aac", "-b:a", "192k",
-                       out]
-                enc = "VAAPI"
-            else:
-                cmd = ["ffmpeg", "-y", "-ss", str(s), "-i", video, "-t", str(dur),
-                       "-c:v", "libx264", "-preset", "slow", "-crf", "18",
-                       "-profile:v", "high", "-level", "4.2", "-pix_fmt", "yuv420p",
-                       "-c:a", "aac", "-b:a", "192k", out]
-                enc = "CPU"
+                if vaapi:
+                    cmd = ["ffmpeg", "-y",
+                           "-vaapi_device", "/dev/dri/renderD128",
+                           "-ss", str(s), "-i", video, "-t", str(dur),
+                           "-vf", "format=nv12,hwupload",
+                           "-c:v", "h264_vaapi", "-rc_mode", "CQP", "-global_quality", "10",
+                           "-compression_level", "1",
+                           "-af", "loudnorm",
+                           "-c:a", "aac", "-b:a", "192k",
+                           out]
+                    enc = "VAAPI"
+                else:
+                    cmd = ["ffmpeg", "-y", "-ss", str(s), "-i", video, "-t", str(dur),
+                           "-c:v", "libx264", "-preset", "slow", "-crf", "18",
+                           "-profile:v", "high", "-level", "4.2", "-pix_fmt", "yuv420p",
+                           "-c:a", "aac", "-b:a", "192k", out]
+                    enc = "CPU"
 
-            r = run(cmd, check=False)
-            if r.returncode == 0:
-                log(f"   {name} created ({enc})")
-            else:
-                log_error(f"Failed {name}: {r.stderr[-200:]}")
+                r = run(cmd, check=False)
+                if r.returncode == 0 and os.path.exists(out) and os.path.getsize(out) > 0:
+                    log(f"   {name} created ({enc})")
+                    clips_generated += 1
+                else:
+                    err_msg = r.stderr[-200:] if r.stderr else "Unknown error"
+                    log_error(f"   Failed {name}: {err_msg}")
+            except Exception as e:
+                log_error(f"   Error creating {name}: {e}")
+                continue
+
+    if clips_generated == 0:
+        log_error("Phase 4 Failed: No clips were generated")
+        notify("Phase 4 Failed: No clips generated")
+        set_status("Phase 4 FAILED")
+        raise RuntimeError("No clips generated")
 
     set_status("Phase 4 Complete")
-    notify("Phase 4 Complete: Clips generated")
+    notify(f"Phase 4 Complete: {clips_generated} clips generated")
 
 # ─── Phase 5: TTS ─────────────────────────────────────────────────────────────
 def _tts_api(text, out_pcm, voice, style):
@@ -484,13 +602,27 @@ def _tts_api(text, out_pcm, voice, style):
             f.write(base64.b64decode(audio))
 
 def phase_tts(duration, num_hours):
+    voice = env("TTS_VOICE", "Algenib")
+    if not voice:
+        log_error("Phase 5 Failed: TTS_VOICE not configured")
+        notify("Phase 5 Failed: TTS voice not set")
+        set_status("Phase 5 FAILED")
+        raise RuntimeError("TTS_VOICE not configured")
+
+    api_key = env("GEMINI_API_KEY")
+    if not api_key:
+        log_error("Phase 5 Failed: GEMINI_API_KEY not configured")
+        notify("Phase 5 Failed: No API key configured")
+        set_status("Phase 5 FAILED")
+        raise RuntimeError("GEMINI_API_KEY not configured")
+
     set_status("Phase 5: Generating TTS...")
     log("Phase 5: Generating TTS...")
     notify("Phase 5 Started: Generating TTS...")
-    voice = env("TTS_VOICE", "Algenib")
     style = env("TTS_STYLE", "")
     delay = int(env("TTS_DELAY", "300"))
 
+    tts_generated = 0
     for i in range(1, num_hours + 1):
         padded = f"{i:03d}"
         wav = os.path.join(TTS_DIR, f"tts_{padded}.wav")
@@ -499,39 +631,53 @@ def phase_tts(duration, num_hours):
 
         if not os.path.exists(wav):
             if not os.path.exists(script_file):
-                log(f"   Script {i} not found, skipping TTS")
+                log(f"   Warning: Script {i} not found, skipping TTS")
                 continue
             log(f"   Generating TTS for script {i}...")
-            with open(script_file) as f:
-                txt = f.read()
-
-            pcm = os.path.join(TTS_DIR, f"tts_{padded}.pcm")
             try:
+                with open(script_file) as f:
+                    txt = f.read()
+                if not txt.strip():
+                    log_error(f"   Warning: Script {i} is empty, skipping")
+                    continue
+
+                pcm = os.path.join(TTS_DIR, f"tts_{padded}.pcm")
                 _tts_api(txt, pcm, voice, style)
+
+                if not os.path.exists(pcm):
+                    log_error(f"   TTS API call failed for script {i}")
+                    continue
+
+                r = run(["ffmpeg", "-y", "-f", "s16le", "-ar", "24000", "-ac", "1",
+                         "-i", pcm, "-ar", "44100", "-ac", "2", wav], check=False)
+                if r.returncode != 0:
+                    log_error(f"   ffmpeg failed for script {i}: {r.stderr[-200:] if r.stderr else 'Unknown'}")
+                    continue
+                
+                if os.path.exists(pcm):
+                    os.remove(pcm)
+                log(f"   tts_{padded}.wav created")
+                tts_generated += 1
+                set_status(f"Phase 5: TTS {i}/{num_hours} generated")
+                notify(f"TTS {i}/{num_hours} generated")
             except Exception as e:
-                log_error(f"TTS failed for script {i}: {e}")
+                log_error(f"   Error generating TTS for script {i}: {e}")
                 continue
-
-            if not os.path.exists(pcm):
-                log_error(f"TTS failed for script {i}")
-                continue
-
-            run(["ffmpeg", "-y", "-f", "s16le", "-ar", "24000", "-ac", "1",
-                 "-i", pcm, "-ar", "44100", "-ac", "2", wav])
-            os.remove(pcm)
-            log(f"   tts_{padded}.wav created")
-            set_status(f"Phase 5: TTS {i}/{num_hours} generated")
-            notify(f"TTS {i}/{num_hours} generated")
         else:
             log(f"   TTS {i} WAV exists, skipping")
 
         if not os.path.exists(srt):
-            log(f"   Generating SRT for tts_{padded}.wav...")
-            srt_out = os.path.splitext(wav)[0] + ".srt"
-            run(["stable-ts", wav, "-o", srt_out, "--word_level", "false", "--device", "cpu",
-                 "--language", "en", "--output_format", "srt"], check=False)
-            log(f"   tts_{padded}.srt created" if os.path.exists(srt) else
-                log_error(f"   SRT failed for tts_{padded}"))
+            if not os.path.exists(wav):
+                log(f"   Warning: Cannot generate SRT, WAV not found for script {i}")
+            else:
+                log(f"   Generating SRT for tts_{padded}.wav...")
+                srt_out = os.path.splitext(wav)[0] + ".srt"
+                r = run(["stable-ts", wav, "-o", srt_out, "--word_level", "false", "--device", "cpu",
+                         "--language", "en", "--output_format", "srt"], check=False)
+                if os.path.exists(srt):
+                    log(f"   tts_{padded}.srt created")
+                else:
+                    log_error(f"   SRT failed for tts_{padded}: {r.stderr[-200:] if r.stderr else 'Unknown'}")
         else:
             log(f"   tts_{padded}.srt exists, skipping")
 
@@ -539,8 +685,14 @@ def phase_tts(duration, num_hours):
             log(f"   Waiting {delay}s")
             time.sleep(delay)
 
+    if tts_generated == 0:
+        log_error("Phase 5 Failed: No TTS files were generated")
+        notify("Phase 5 Failed: No TTS generated")
+        set_status("Phase 5 FAILED")
+        raise RuntimeError("No TTS generated")
+
     set_status("Phase 5 Complete")
-    notify("Phase 5 Complete: TTS generation done")
+    notify(f"Phase 5 Complete: {tts_generated} TTS files generated")
 
 # ─── Find latest video ────────────────────────────────────────────────────────
 def find_video():
@@ -856,17 +1008,33 @@ def process_cmd(text, chat_id):
             except ValueError:
                 tg_send("Invalid index. Use /set_index 3")
 
+    elif cmd in ("/set_clips", "/setclips"):
+        if not args:
+            current = env("CLIPS_PER_HOUR", "5")
+            tg_send(f"Current clips per hour: {current}\nUsage: /set_clips 10")
+        else:
+            try:
+                clips = int(args)
+                if clips < 1 or clips > 20:
+                    tg_send("Clips per hour must be between 1 and 20.")
+                else:
+                    update_env_var("CLIPS_PER_HOUR", str(clips))
+                    tg_send(f"Clips per hour set to: {clips}")
+            except ValueError:
+                tg_send("Invalid number. Use /set_clips 10")
+
     elif cmd in ("/config", "/settings"):
         voice = env("TTS_VOICE", "Algenib")
         style = env("TTS_STYLE") or "(none)"
         index = env("PLAYLIST_INDEX", "1")
+        clips = env("CLIPS_PER_HOUR", "5")
         status = "Running" if PIPELINE_RUNNING else "Idle"
 
         wc = count_files(os.path.join(WORKSPACE, "tts/*.wav"))
         sc = count_files(os.path.join(WORKSPACE, "tts/*.srt"))
         rc = count_files(os.path.join(WORKSPACE, "scripts/*.txt"))
         cc = count_files(os.path.join(WORKSPACE, "shorts/*.mp4"))
-        tg_send(f"Config:\nVoice: {voice}\nStyle: {style}\nIndex: {index}\nStatus: {status}\n\nFiles:\nScripts: {rc}\nClips: {cc}\nTTS WAVs: {wc}\nTTS SRTs: {sc}")
+        tg_send(f"Config:\nVoice: {voice}\nStyle: {style}\nIndex: {index}\nClips/hr: {clips}\nStatus: {status}\n\nFiles:\nScripts: {rc}\nClips: {cc}\nTTS WAVs: {wc}\nTTS SRTs: {sc}")
 
     elif cmd == "/status":
         listener_status = "No"
@@ -945,6 +1113,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 /set_style Say...  - Set style prefix
 /set_style         - Clear style
 /set_index 3      - Set playlist index (1=first video)
+/set_clips 10     - Set clips per hour (1-20)
 
 /config     - Settings and file counts
 /status     - Listener and pipeline status
@@ -955,6 +1124,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 
 /restart_listener - Restart the listener
 /stop_pipeline   - Stop running pipeline
+
 /delete_partial  - Delete incomplete files
 /cleanup         - Delete all generated files
 /clean_backups  - Clean old backup versions
@@ -963,6 +1133,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 
     elif cmd in ("/restart_listener", "/restart"):
         tg_send("Restarting listener...")
+        global LISTENER_RESTART
         LISTENER_RESTART = True
 
     elif cmd == "/stop_pipeline":
@@ -1107,7 +1278,7 @@ WantedBy=default.target
     with open(PID_FILE, "w") as f:
         f.write(str(os.getpid()))
 
-    token = env("TELEGRAM_BOT_TOKEN")
+    env("TELEGRAM_BOT_TOKEN")  # Ensure token is loaded
     chat  = env("TELEGRAM_CHAT_ID")
 
     global STREAMING
@@ -1223,7 +1394,7 @@ def onboard():
             missing = True
 
     try:
-        import stable_whisper
+        import stable_whisper  # noqa: F401
         print(f"  {ok()} stable-ts")
     except ImportError:
         print(f"  {fail()} stable-ts  (pip install stable-ts)")
@@ -1375,6 +1546,20 @@ def onboard():
             f.write("\n".join(keys) + "\n")
         os.chmod(keys_file, 0o600)
         print(f"  {ok()} {keys_file} ({len(keys)} key(s))")
+
+        print(f"\n{B}Storing keys in system keychain...{X}")
+        try:
+            set_gemini_keys(keys)
+            print(f"  {ok()} Gemini keys stored")
+            set_service_password("gemini-api-key", config["GEMINI_API_KEY"])
+            print(f"  {ok()} TTS API key stored")
+            if use_telegram:
+                set_service_password("telegram-bot-token", config["TELEGRAM_BOT_TOKEN"])
+                set_service_password("telegram-chat-id", config["TELEGRAM_CHAT_ID"])
+                print(f"  {ok()} Telegram keys stored")
+        except Exception as e:
+            print(f"  {warn()} Keychain not available: {e}")
+            print(f"    Keys saved to files only")
 
     # Reload env
     global ENV, ENV_FILE, KEYS_FILE, WORKSPACE, WORKFLOW_DIR
