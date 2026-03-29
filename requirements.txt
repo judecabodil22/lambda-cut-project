@@ -6,7 +6,6 @@ yt-dlp>=2024.1.0
 
 # Transcription
 stable-ts>=2.0.0
-stable-whisper>=2.0.0
 
 # Security: System keychain for API keys
 keyring>=23.0.0
