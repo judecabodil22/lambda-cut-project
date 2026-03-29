@@ -11,6 +11,7 @@ All notable changes to this project documented here.
 | Telegram HTML parsing | Fixed by escaping release_notes with html.escape() to prevent parse errors |
 | Removed /logs command | Command removed due to persistent errors from log noise |
 | Removed /clear_logs command | Command removed (no longer needed without /logs) |
+| Systemd service reliability | Changed Restart=on-failure to Restart=always, added network wait delay |
 
 ---
 

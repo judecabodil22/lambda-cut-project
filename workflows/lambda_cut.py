@@ -1060,9 +1060,10 @@ After=network.target
 
 [Service]
 Type=simple
+ExecStartPre=/bin/sleep 10
 ExecStart={python} {script_path} listen
 WorkingDirectory={workspace}
-Restart=on-failure
+Restart=always
 RestartSec=10
 
 [Install]
@@ -1444,9 +1445,10 @@ After=network.target
 
 [Service]
 Type=simple
+ExecStartPre=/bin/sleep 10
 ExecStart={python} {dst} listen
 WorkingDirectory={WORKSPACE}
-Restart=on-failure
+Restart=always
 RestartSec=10
 
 [Install]
