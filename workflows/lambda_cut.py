@@ -899,6 +899,27 @@ def process_cmd(text, chat_id):
 
         tg_send(f"Listener: {listener_status}\nPID: {listener_pid}\nDir: {listener_dir}\nVersion: v{local_ver}\n\nPipeline: {pipeline_status}{update_status}")
 
+    elif cmd == "/debug":
+        if os.path.exists(LOG_FILE):
+            with open(LOG_FILE) as f:
+                lines = f.readlines()[-10:]
+            important = []
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                if len(line) > 150:
+                    continue
+                if "Transcribe:" in line or "transcribing" in line.lower():
+                    continue
+                important.append(line)
+            if important:
+                txt = "\n".join(important[-8:])
+                tg_send(f"🐛 Recent Log:\n\n{txt}")
+            else:
+                tg_send("No recent log entries.")
+        else:
+            tg_send("No logs found.")
 
 
     elif cmd == "/help":
@@ -926,6 +947,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 
 /config     - Settings and file counts
 /status     - Listener and pipeline status
+/debug      - Show recent debug log entries
 
 /version    - Show current version
 /update     - Check for and install updates

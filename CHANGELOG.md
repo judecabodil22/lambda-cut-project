@@ -2,6 +2,16 @@
 
 All notable changes to this project documented here.
 
+## 2.5.21 — 2026-03-29
+
+### Bug Fixes & Improvements
+
+| Change | Details |
+|--------|---------|
+| Added /debug command | Simple debug log viewer to replace /logs functionality |
+
+---
+
 ## 2.5.20 — 2026-03-29
 
 ### Bug Fixes & Improvements
