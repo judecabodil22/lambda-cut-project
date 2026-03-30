@@ -17,7 +17,7 @@ All configuration is done via the `.env` file.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PLAYLIST_URL` | (none) | YouTube playlist to process |
-| `TTS_VOICE` | `Algenib` | Gemini TTS voice name |
+| `TTS_VOICE` | `Vindemiatrix` | Gemini TTS voice name |
 | `TTS_STYLE` | (none) | Style instruction for TTS |
 | `WORKSPACE` | (auto) | Working directory path |
 | `RECORDING_PATH` | `~/Videos/Recordings/` | Local recordings folder |
@@ -59,28 +59,47 @@ All configuration is done via the `.env` file.
 
 ## TTS Voices
 
-Available Gemini TTS voices (default: Algenib):
+Available Gemini TTS voices (default: Vindemiatrix):
 
 ### Female Voices
 
-| Voice | Characteristics |
-|-------|----------------|
-| **Aoede** | High pitch (206 Hz), warm, articulate, thoughtful |
-| **Zephyr** | High pitch, youthful, bright, high energy |
-| **Kore** | Moderate pitch, helpful, moderate energy |
-| **Despina** | Energetic, enthusiastic, cheerful |
-| **Callirrhoe** | Warm, conversational, helpful |
-| **Pulcherrima** | Moderate energy, clear, professional |
-| **Algenib** | Lower female, smooth, calm |
+| Voice | Style |
+|-------|-------|
+| **Aoede** | Breezy and natural |
+| **Kore** | Firm and confident |
+| **Leda** | Youthful and energetic |
+| **Zephyr** | Bright and cheerful |
+| **Autonoe** | Bright and optimistic |
+| **Callirhoe** | Easy-going and relaxed |
+| **Despina** | Smooth and flowing |
+| **Erinome** | Clear and precise |
+| **Gacrux** | Mature and experienced |
+| **Laomedeia** | Upbeat and lively |
+| **Pulcherrima** | Forward and expressive |
+| **Sulafat** | Warm and welcoming |
+| **Vindemiatrix** | Gentle and kind |
+| **Achernar** | Soft and gentle |
 
 ### Male Voices
 
-| Voice | Characteristics |
-|-------|----------------|
-| **Puck** | Lower pitch, authoritative, confident |
-| **Enceladus** | Moderate pitch, confident, clear |
-| **Scheat** | Lower male, warm, steady |
-| **Achernar** | Deep male, strong, authoritative |
+| Voice | Style |
+|-------|-------|
+| **Puck** | Upbeat and energetic |
+| **Charon** | Informative and clear |
+| **Fenrir** | Excitable and dynamic |
+| **Orus** | Firm and decisive |
+| **Achird** | Friendly and approachable |
+| **Algenib** | Gravelly texture |
+| **Algieba** | Smooth and pleasant |
+| **Alnilam** | Firm and strong |
+| **Enceladus** | Breathy and soft |
+| **Iapetus** | Clear and articulate |
+| **Rasalgethi** | Informative and professional |
+| **Sadachbia** | Lively and animated |
+| **Sadaltager** | Knowledgeable and authoritative |
+| **Schedar** | Even and balanced |
+| **Umbriel** | Easy-going and calm |
+| **Zubenelgenubi** | Casual and conversational |
 
 ### Style Instructions
 

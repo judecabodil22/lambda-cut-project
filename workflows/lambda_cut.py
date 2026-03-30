@@ -643,7 +643,7 @@ def _strip_title(script_text):
     return script_text.strip()
 
 def phase_tts(duration, num_hours):
-    voice = env("TTS_VOICE", "Algenib")
+    voice = env("TTS_VOICE", "Vindemiatrix")
     if not voice:
         log_error("Phase 5 Failed: TTS_VOICE not configured")
         notify("Phase 5 Failed: TTS voice not set")
@@ -1066,7 +1066,7 @@ def process_cmd(text, chat_id):
                 tg_send("Invalid number. Use /set_clips 10")
 
     elif cmd in ("/config", "/settings"):
-        voice = env("TTS_VOICE", "Algenib")
+        voice = env("TTS_VOICE", "Vindemiatrix")
         style = env("TTS_STYLE") or "(none)"
         index = env("PLAYLIST_INDEX", "1")
         clips = env("CLIPS_PER_HOUR", "5")
@@ -1505,15 +1505,15 @@ def onboard():
             lambda v: v.startswith("https://www.youtube.com/playlist?list="))
 
         voices = ["Zephyr","Puck","Charon","Kore","Fenrir","Leda","Orus","Aoede",
-                  "Callirrhoe","Autonoe","Enceladus","Iapetus","Umbriel","Algieba",
+                  "Callirhoe","Autonoe","Enceladus","Iapetus","Umbriel","Algieba",
                   "Despina","Erinome","Algenib","Rasalgethi","Schedar","Gacrux",
                   "Pulcherrima","Achird","Zubenelgenubi","Vindemiatrix","Sadachbia",
                   "Sadaltager","Sulafat","Achernar","Alnilam","Laomedeia"]
-        default_voice = existing.get("TTS_VOICE", "Algenib") or "Algenib"
-        default_idx = voices.index(default_voice) + 1 if default_voice in voices else 17
+        default_voice = existing.get("TTS_VOICE", "Vindemiatrix") or "Vindemiatrix"
+        default_idx = voices.index(default_voice) + 1 if default_voice in voices else 24
         print(f"\n  TTS Voice (pick a number):")
         for i, v in enumerate(voices, 1):
-            marker = f" ({'current' if v == default_voice else 'default'})" if v == default_voice or (v == 'Algenib' and default_voice == 'Algenib') else ""
+            marker = f" ({'current' if v == default_voice else 'default'})" if v == default_voice else ""
             print(f"    {i:2d}. {v}{marker}")
         while True:
             choice = input(f"\n  Choice [{default_idx}]: ").strip()
