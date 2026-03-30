@@ -17,7 +17,7 @@ All configuration is done via the `.env` file.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PLAYLIST_URL` | (none) | YouTube playlist to process |
-| `TTS_VOICE` | `Zephyr` | Gemini TTS voice name |
+| `TTS_VOICE` | `Algenib` | Gemini TTS voice name |
 | `TTS_STYLE` | (none) | Style instruction for TTS |
 | `WORKSPACE` | (auto) | Working directory path |
 | `RECORDING_PATH` | `~/Videos/Recordings/` | Local recordings folder |
@@ -59,7 +59,7 @@ All configuration is done via the `.env` file.
 
 ## TTS Voices
 
-Available Gemini TTS voices (default: Zephyr):
+Available Gemini TTS voices (default: Algenib):
 
 ### Female Voices
 

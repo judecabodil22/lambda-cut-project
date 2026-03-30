@@ -33,14 +33,17 @@ pip install ruff
 ### Run Locally
 
 ```bash
+# Activate venv first
+source venv/bin/activate
+
 # Run the pipeline
-python3 workflows/lambda_cut.py run
+python workflows/lambda_cut.py run
 
 # Start Telegram listener
-python3 workflows/lambda_cut.py listen
+python workflows/lambda_cut.py listen
 
 # Run onboarding
-python3 workflows/lambda_cut.py onboard
+python workflows/lambda_cut.py onboard
 ```
 
 ## Code Style

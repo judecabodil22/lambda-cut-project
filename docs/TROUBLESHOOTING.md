@@ -22,7 +22,8 @@ Common issues and their solutions.
 
 Run the onboard wizard:
 ```bash
-python3 workflows/lambda_cut.py onboard
+source venv/bin/activate
+python workflows/lambda_cut.py onboard
 ```
 
 ---
