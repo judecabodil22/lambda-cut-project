@@ -95,24 +95,3 @@ def migrate_from_file(filepath, key_prefix):
         return True
     except Exception:
         return False
-
-
-def set_gcloud_tts_keys(keys_list):
-    """Store multiple Google Cloud TTS API keys."""
-    for i, key in enumerate(keys_list):
-        username = f"gcloud-tts-key-{i+1}"
-        set_service_password(username, key)
-
-
-def get_gcloud_tts_keys():
-    """Retrieve all Google Cloud TTS API keys."""
-    keys = []
-    i = 1
-    while True:
-        username = f"gcloud-tts-key-{i}"
-        key = get_service_password(username)
-        if key is None:
-            break
-        keys.append(key)
-        i += 1
-    return keys

@@ -19,6 +19,9 @@ All configuration is done via the `.env` file.
 | `PLAYLIST_URL` | (none) | YouTube playlist to process |
 | `TTS_VOICE` | `Vindemiatrix` | Gemini TTS voice name |
 | `TTS_STYLE` | (none) | Style instruction for TTS |
+| `GAME_TITLE` | (none) | Game title for script context |
+| `CLIPS_PER_HOUR` | `5` | Number of clips to generate per hour |
+| `PLAYLIST_INDEX` | `1` | Which video to download from playlist |
 | `WORKSPACE` | (auto) | Working directory path |
 | `RECORDING_PATH` | `~/Videos/Recordings/` | Local recordings folder |
 
@@ -40,6 +43,8 @@ All configuration is done via the `.env` file.
 |---------|-------------|
 | `/set_voice` | Change TTS voice |
 | `/set_style` | Set TTS style |
+| `/voices` | List available TTS voices |
+| `/set_game` | Set game title for script context |
 | `/set_recording_path` | Set recordings folder |
 | `/config` | Show current settings |
 

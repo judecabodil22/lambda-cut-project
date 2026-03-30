@@ -1,6 +1,6 @@
-# Lambda Cut 2.6.0
+# Lambda Cut 2.8.0
 
-[![Version](https://img.shields.io/badge/version-2.6.0-blue.svg)](./VERSION)
+[![Version](https://img.shields.io/badge/version-2.8.0-blue.svg)](./VERSION)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-purple.svg)](https://archlinux.org/)
 

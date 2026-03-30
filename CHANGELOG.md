@@ -2,6 +2,34 @@
 
 All notable changes to this project documented here.
 
+## [Unreleased]
+
+### New Features
+
+| Change | Details |
+|--------|---------|
+| Script prompt variants | 4 variants: mystery recap, breakdown, timeline, moral/lesson |
+| Random perspectives | 8 perspectives randomly applied to each script (villain's motive, hero's mistake, etc.) |
+| Voice rotation | Voice rotates randomly on each listener restart from a pool of 6 female voices |
+| Game title | Set game title via /set_game for script context |
+| /voices command | Lists available TTS voices by gender |
+
+### Improvements
+
+| Change | Details |
+|--------|---------|
+| Telegram restart loop fix | Persists update offset to prevent /restart_listener loop |
+| HTML parse mode removed | Messages now sent as plain text to prevent parse errors |
+| Script log improvements | Logs which variant/perspective used for each script |
+
+### Changes
+
+| Change | Details |
+|--------|---------|
+| Removed Google Cloud TTS | Gemini TTS provides better style support for character voices |
+
+---
+
 ## 2.8.0 — 2026-03-29
 
 ### New Features
