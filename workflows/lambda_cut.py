@@ -50,6 +50,7 @@ LISTENER_RESTART = False  # set True when update requires restart
 PIPELINE_STOP_REQUESTED = False  # set True to request pipeline stop
 LISTENER_RUNNING = True  # set False to stop listener
 PID_FILE = "/tmp/lambda_cut_listener.pid"
+OFFSET_FILE = "/tmp/lambda_cut_listener_offset"
 
 # ─── Environment ──────────────────────────────────────────────────────────────
 def load_env():
@@ -1186,17 +1187,17 @@ def process_cmd(text, chat_id):
 
 
     elif cmd == "/help":
-        tg_send("""<b>Lambda Cut</b> — YouTube Shorts Pipeline
+        tg_send("""Lambda Cut — YouTube Shorts Pipeline
 Converts long-form YouTube videos into shorts with AI scripts and TTS.
 
-<b>Pipeline Phases:</b>
+Pipeline Phases:
 1️⃣ Download  - Download latest video (best quality)
 2️⃣ Transcribe - Generate transcript with stable-ts
 3️⃣ Scripts   - AI-generated short scripts via Gemini
 4️⃣ Clips    - Extract video clips based on scenes
 5️⃣ TTS       - Generate narration audio + subtitles
 
-<b>Commands:</b>
+Commands:
 /run_pipeline    - Run full pipeline
 /run_local       - Run pipeline on local recording
 /run_phase 5    - Run specific phase(s)
@@ -1225,7 +1226,7 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 /cleanup         - Delete all generated files
 /clean_backups  - Clean old backup versions
 
-/help - This message""", parse_mode="HTML")
+/help - This message""")
 
     elif cmd in ("/restart_listener", "/restart"):
         tg_send("Restarting listener...")
@@ -1275,18 +1276,18 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
             if len(release_notes) > 500:
                 release_notes = release_notes[:500] + "..."
             
-            tg_send(f"""🔔 Update Available: v{remote_ver}
+            tg_send(f"""Update Available: v{remote_ver}
 
-<b>Release Notes:</b>
-{html.escape(release_notes)}
+Release Notes:
+{release_notes[:500]}
 
-<b>This will:</b>
+This will:
 1. Backup current installation (up to 2 backups)
 2. Download and install new files
 3. Preserve your .env and settings
 4. Restart listener
 
-Type /confirm_update to proceed.""", parse_mode="HTML")
+Type /confirm_update to proceed.""")
     
     elif cmd == "/confirm_update":
         script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1405,6 +1406,11 @@ WantedBy=default.target
 
     tg_send(f"Lambda Cut listener started (v{local_ver}).\nVoice: {rotated_voice}")
     offset = 0
+    if os.path.exists(OFFSET_FILE):
+        try:
+            offset = int(open(OFFSET_FILE).read().strip())
+        except (ValueError, OSError):
+            pass
 
     global LISTENER_RUNNING
     while LISTENER_RUNNING:
@@ -1415,6 +1421,8 @@ WantedBy=default.target
                 continue
             for upd in r["result"]:
                 offset = upd["update_id"] + 1
+                with open(OFFSET_FILE, "w") as f:
+                    f.write(str(offset))
                 msg = upd.get("message", {})
                 cid = str(msg.get("chat", {}).get("id", ""))
                 txt = msg.get("text", "")
