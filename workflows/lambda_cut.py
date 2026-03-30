@@ -689,8 +689,9 @@ def _gcloud_tts_api(text, out_pcm, voice, style):
             raise RuntimeError("GCLOUD_TTS_API_KEY not configured")
         keys = [api_key]
     
-    if style:
-        text = f"{style} {text}"
+    # Note: Google Cloud TTS doesn't support natural language style instructions like Gemini.
+    # Style prepending would be read aloud, so we skip it for gcloud.
+    # Use /set_voice to select a voice that matches your desired tone.
     
     voice_map = {
         "en-US-Neural2-C": {"languageCode": "en-US", "name": "en-US-Neural2-C"},
