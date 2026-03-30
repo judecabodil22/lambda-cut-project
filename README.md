@@ -28,11 +28,16 @@ cp .env.example .env
 # 3. Edit .env with your API keys
 nano .env
 
-# 4. Run the onboarding wizard
-python3 workflows/lambda_cut.py onboard
+# 4. Set up virtual environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
-# 5. Start the Telegram listener
-python3 workflows/lambda_cut.py listen
+# 5. Run the onboarding wizard
+python workflows/lambda_cut.py onboard
+
+# 6. Start the Telegram listener
+python workflows/lambda_cut.py listen
 ```
 
 Then use Telegram commands to control the pipeline!
@@ -123,13 +128,16 @@ For troubleshooting help, see [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.m
 ### CLI Commands
 
 ```bash
-python3 lambda_cut.py run              # Run full pipeline
-python3 lambda_cut.py run -phase 2,3   # Run specific phases
-python3 lambda_cut.py run -index 3     # Download 3rd video
-python3 lambda_cut.py listen           # Start Telegram bot
-python3 lambda_cut.py stop             # Stop listener
-python3 lambda_cut.py update           # Check for updates
-python3 lambda_cut.py version          # Show version
+# Always activate the venv first
+source venv/bin/activate
+
+python workflows/lambda_cut.py run              # Run full pipeline
+python workflows/lambda_cut.py run -phase 2,3   # Run specific phases
+python workflows/lambda_cut.py run -index 3     # Download 3rd video
+python workflows/lambda_cut.py listen           # Start Telegram bot
+python workflows/lambda_cut.py stop             # Stop listener
+python workflows/lambda_cut.py update           # Check for updates
+python workflows/lambda_cut.py version          # Show version
 ```
 
 ## Update System
