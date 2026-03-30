@@ -1146,6 +1146,30 @@ def process_cmd(text, chat_id):
         else:
             tg_send("Invalid provider. Use 'gemini' or 'gcloud'.")
 
+    elif cmd in ("/voices", "/listvoices"):
+        provider = env("TTS_PROVIDER", "gemini")
+        if provider == "gcloud":
+            tg_send("""Google Cloud TTS Voices:
+
+Neural2 (8 voices):
+en-US-Neural2-C, en-US-Neural2-D, en-US-Neural2-E, en-US-Neural2-F
+en-US-Neural2-G, en-US-Neural2-H, en-US-Neural2-I, en-US-Neural2-J
+
+Studio (2 voices):
+en-US-Studio-O, en-US-Studio-Q
+
+Chirp HD (2 voices):
+en-US-Chirp-HD-D, en-US-Chirp-HD-F
+
+Use /set_voice <name> to select.""")
+        else:
+            tg_send("""Gemini TTS Voices (Chirp 3):
+
+Female: Vindemiatrix, Aoede, Callirhoe, Gacrux, Sulafat, Leda, Kore, Enceladus, Erinome, Despina, Alnilam, Laomedeia, Achernar, Pulcherrima, Zephyr
+Male: Puck, Charon, Fenrir, Orus, Iapetus, Umbriel, Algieba, Rasalgethi, Schedar, Sadachbia, Sadaltager, Achird, Zubenelgenubi, Algenib, Autonoe
+
+Use /set_voice <name> to select.""")
+
     elif cmd in ("/set_style", "/setstyle"):
         if not args:
             update_env_var("TTS_STYLE", "")
@@ -1287,6 +1311,7 @@ Commands:
 /skip_phase 1,2 - Skip specific phases
 
 /set_voice Puck    - Change TTS voice
+/voices          - List available voices
 /set_tts_provider gcloud - Switch TTS provider (gemini/gcloud)
 /set_style Say...  - Set style prefix
 /set_style         - Clear style
