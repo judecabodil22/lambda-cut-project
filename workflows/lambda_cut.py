@@ -1151,24 +1151,27 @@ def process_cmd(text, chat_id):
         if provider == "gcloud":
             tg_send("""Google Cloud TTS Voices:
 
-Neural2 (8 voices):
-en-US-Neural2-C, en-US-Neural2-D, en-US-Neural2-E, en-US-Neural2-F
-en-US-Neural2-G, en-US-Neural2-H, en-US-Neural2-I, en-US-Neural2-J
+Neural2:
+F: C, E, F, G, H
+M: D, I, J
 
-Studio (2 voices):
-en-US-Studio-O, en-US-Studio-Q
+Studio:
+F: O
+M: Q
 
-Chirp HD (2 voices):
-en-US-Chirp-HD-D, en-US-Chirp-HD-F
+Chirp HD:
+F: D, F
 
-Use /set_voice <name> to select.""")
+Use /set_voice <name> to select.
+Example: /set_voice en-US-Neural2-F""")
         else:
             tg_send("""Gemini TTS Voices (Chirp 3):
 
 Female: Vindemiatrix, Aoede, Callirhoe, Gacrux, Sulafat, Leda, Kore, Enceladus, Erinome, Despina, Alnilam, Laomedeia, Achernar, Pulcherrima, Zephyr
 Male: Puck, Charon, Fenrir, Orus, Iapetus, Umbriel, Algieba, Rasalgethi, Schedar, Sadachbia, Sadaltager, Achird, Zubenelgenubi, Algenib, Autonoe
 
-Use /set_voice <name> to select.""")
+Use /set_voice <name> to select.
+Example: /set_voice Vindemiatrix""")
 
     elif cmd in ("/set_style", "/setstyle"):
         if not args:
