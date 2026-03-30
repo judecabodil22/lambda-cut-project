@@ -1238,9 +1238,8 @@ Commands:
 /help - This message""")
 
     elif cmd in ("/restart_listener", "/restart"):
-        tg_send("Restarting listener...")
-        global LISTENER_RESTART
-        LISTENER_RESTART = True
+        tg_send("Restarting listener via systemd...")
+        subprocess.run(["systemctl", "--user", "restart", "lambda-cut-listener.service"], capture_output=True)
 
     elif cmd == "/stop_pipeline":
         if PIPELINE_RUNNING:
@@ -1440,12 +1439,8 @@ WantedBy=default.target
                     process_cmd(txt, cid)
                     if LISTENER_RESTART:
                         LISTENER_RESTART = False
-                        tg_send("Restarting listener...")
-                        time.sleep(1)
-                        subprocess.Popen([sys.executable] + sys.argv, 
-                                       stdout=open("/tmp/lambda_cut.log", "w"),
-                                       stderr=subprocess.STDOUT,
-                                       start_new_session=True)
+                        tg_send("Restarting listener via systemd...")
+                        subprocess.run(["systemctl", "--user", "restart", "lambda-cut-listener.service"], capture_output=True)
                         sys.exit(0)
         except urllib.error.URLError:
             time.sleep(5)

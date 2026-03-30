@@ -19,6 +19,7 @@ All notable changes to this project documented here.
 | Change | Details |
 |--------|---------|
 | Telegram restart loop fix | Persists update offset to prevent /restart_listener loop |
+| Voice rotation fix | Listener restart now uses systemd to ensure voice rotates properly |
 | HTML parse mode removed | Messages now sent as plain text to prevent parse errors |
 | Script log improvements | Logs which variant/perspective used for each script |
 
