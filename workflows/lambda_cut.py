@@ -288,7 +288,46 @@ def phase_transcribe(video):
     return json_file
 
 # ─── Phase 3: Scripts ─────────────────────────────────────────────────────────
-SCRIPT_PROMPT = """You are a YouTube Shorts scriptwriter. Rewrite the following transcript into a short, spoken script.
+import random as _random
+
+SCRIPT_PERSPECTIVES = [
+    "Focus on the villain's motive — why did they do what they did?",
+    "Focus on the hero's fatal mistake — what went wrong and why",
+    "Focus on what the player/viewer missed — the hidden detail",
+    "Focus on the cost of the outcome — who paid the real price",
+    "Focus on the turning point — the one moment everything changed",
+    "Focus on the emotional undercurrent — what the characters felt but never said",
+    "Focus on the consequence — what happened after the dust settled",
+    "Focus on the mystery — what remains unexplained",
+]
+
+SCRIPT_VARIANTS = {
+    "mystery_recap": {
+        "style": "Mystery Recap",
+        "instruction": """Rewrite this transcript into a mysterious, suspenseful narrative. Treat the events like a puzzle the viewer is trying to solve. Drop clues, withhold the answer until the end. Dark, eerie tone. Make the viewer feel like they're uncovering something forbidden.""",
+    },
+    "breakdown": {
+        "style": "Breakdown",
+        "instruction": """Rewrite this transcript as an analytical breakdown. Explain WHY things happened, not just WHAT happened. Connect cause and effect. Make the viewer understand the logic behind the events. Authoritative, knowledgeable tone.""",
+    },
+    "timeline": {
+        "style": "Timeline",
+        "instruction": """Rewrite this transcript as a chronological unfolding of events. Start from the moment everything began and build toward the climax. Each sentence should push the timeline forward. Urgent, escalating tone. The viewer should feel time running out.""",
+    },
+    "lesson": {
+        "style": "Moral/Lesson",
+        "instruction": """Rewrite this transcript to highlight the deeper meaning or lesson. What did the characters learn? What could have been different? Make the viewer reflect on their own life through this story. Contemplative, thought-provoking tone.""",
+    },
+}
+
+def _build_script_prompt(variant_key, perspective, game_title):
+    variant = SCRIPT_VARIANTS[variant_key]
+    game_line = f"This is from the game {game_title}.\n\n" if game_title else ""
+
+    return f"""You are a YouTube Shorts scriptwriter. {game_line}Style: {variant['style']}
+Perspective: {perspective}
+
+{variant['instruction']}
 
 HARD RULES (never break these):
 - NO dialogue — never write what anyone "said", "told", "asked", or "replied"
@@ -310,9 +349,6 @@ ENGAGEMENT TRIGGERS (use at least one):
 - Create rewatch value: Reveal a detail early that only makes sense at the end
 - Use "Wait for it..." or "Here's why..." sparingly — only when earned
 
-EMOTIONAL ARC (mandatory):
-Hook → Mystery/Tension → Rising stakes → Climax → Gut-punch ending
-
 PACING FOR TTS:
 - Short punchy sentences build tension (5-10 words)
 - One slightly longer sentence to let the listener breathe
@@ -323,7 +359,6 @@ PACING FOR TTS:
 TTS-SAFE LANGUAGE:
 - No words the AI will mispronounce: spell out numbers, avoid unusual names without context
 - No run-on sentences — if it's hard to say aloud, rewrite it
-- Read your script out loud. If you stumble, simplify.
 
 OUTPUT FORMAT (strict):
 Line 1: TITLE: [6-10 word title, no punctuation, no clickbait caps]
@@ -338,13 +373,8 @@ TITLE RULES:
 
 MAXIMUM: 150 words for the script body (excluding title).
 
-EXAMPLE OUTPUT:
-TITLE: The Night The Ground Swallowed A Highway
-
-Nobody expected the ground to open up on a Tuesday night. A section of Highway 12 just vanished. A forty-foot sinkhole swallowed three cars and a gas station sign. Witnesses described a deep rumble that lasted six seconds. Then silence. The sinkhole kept growing. By morning, it had consumed half a city block. Engineers discovered a forgotten mine shaft from 1923 directly beneath the road. The city had built on top of it for decades. Thirty families were evacuated before the second collapse. The foreman said they were lucky. The next section of road would have been a school zone. What would you do if the ground opened up right now?
-
 Transcript:
-{transcript}"""
+{{transcript}}"""
 
 def _rate_limit():
     now = time.time()
@@ -368,7 +398,11 @@ def _gemini_script(text, script_num, keys_file):
     if not keys:
         raise RuntimeError("No API keys in keychain or gemini_keys.txt")
 
-    prompt = SCRIPT_PROMPT.format(num=script_num, transcript=text[:3000])
+    variant_key = _random.choice(list(SCRIPT_VARIANTS.keys()))
+    perspective = _random.choice(SCRIPT_PERSPECTIVES)
+    game_title = env("GAME_TITLE", "")
+    prompt = _build_script_prompt(variant_key, perspective, game_title).format(transcript=text[:3000])
+    log(f"   Variant: {SCRIPT_VARIANTS[variant_key]['style']}, Perspective: {perspective[:50]}...")
     body = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.5, "maxOutputTokens": 768}
@@ -1068,18 +1102,33 @@ def process_cmd(text, chat_id):
             except ValueError:
                 tg_send("Invalid number. Use /set_clips 10")
 
+    elif cmd in ("/set_game", "/setgame"):
+        if not args:
+            current = env("GAME_TITLE", "")
+            if current:
+                tg_send(f"Current game: {current}\nUsage: /set_game The Last of Us Part II\nClear with: /set_game clear")
+            else:
+                tg_send("No game set.\nUsage: /set_game The Last of Us Part II")
+        elif args.lower() == "clear":
+            update_env_var("GAME_TITLE", "")
+            tg_send("Game title cleared.")
+        else:
+            update_env_var("GAME_TITLE", args)
+            tg_send(f"Game set to: {args}")
+
     elif cmd in ("/config", "/settings"):
         voice = env("TTS_VOICE", "Vindemiatrix")
         style = env("TTS_STYLE") or "(none)"
         index = env("PLAYLIST_INDEX", "1")
         clips = env("CLIPS_PER_HOUR", "5")
+        game = env("GAME_TITLE", "") or "(none)"
         status = "Running" if PIPELINE_RUNNING else "Idle"
 
         wc = count_files(os.path.join(WORKSPACE, "tts/*.wav"))
         sc = count_files(os.path.join(WORKSPACE, "tts/*.srt"))
         rc = count_files(os.path.join(WORKSPACE, "scripts/*.txt"))
         cc = count_files(os.path.join(WORKSPACE, "shorts/*.mp4"))
-        tg_send(f"Config:\nVoice: {voice}\nStyle: {style}\nIndex: {index}\nClips/hr: {clips}\nStatus: {status}\n\nFiles:\nScripts: {rc}\nClips: {cc}\nTTS WAVs: {wc}\nTTS SRTs: {sc}")
+        tg_send(f"Config:\nGame: {game}\nVoice: {voice}\nStyle: {style}\nIndex: {index}\nClips/hr: {clips}\nStatus: {status}\n\nFiles:\nScripts: {rc}\nClips: {cc}\nTTS WAVs: {wc}\nTTS SRTs: {sc}")
 
     elif cmd == "/status":
         listener_status = "No"
@@ -1159,6 +1208,8 @@ Converts long-form YouTube videos into shorts with AI scripts and TTS.
 /set_style         - Clear style
 /set_index 3      - Set playlist index (1=first video)
 /set_clips 10     - Set clips per hour (1-20)
+/set_game Title   - Set game title for scripts
+/set_game clear   - Clear game title
 
 /config     - Settings and file counts
 /status     - Listener and pipeline status
@@ -1345,8 +1396,14 @@ WantedBy=default.target
         tg_send(f"🔔 Update available: v{remote_ver}\nRun /update to install.")
     else:
         print("No updates available.")
-    
-    tg_send(f"Lambda Cut listener started (v{local_ver}).")
+
+    # Rotate TTS voice on each listener start
+    voice_pool = ["Vindemiatrix", "Aoede", "Callirhoe", "Gacrux", "Sulafat", "Leda"]
+    rotated_voice = _random.choice(voice_pool)
+    update_env_var("TTS_VOICE", rotated_voice)
+    print(f"Voice rotated to: {rotated_voice}")
+
+    tg_send(f"Lambda Cut listener started (v{local_ver}).\nVoice: {rotated_voice}")
     offset = 0
 
     global LISTENER_RUNNING
