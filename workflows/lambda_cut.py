@@ -125,7 +125,7 @@ def tg_send(msg, parse_mode=None):
         log_error(f"Telegram: {e}")
 
 def notify(msg):
-    if not STREAMING:
+    if STREAMING:
         tg_send(msg)
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
