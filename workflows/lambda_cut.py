@@ -3,7 +3,7 @@
 Lambda Cut — YouTube Shorts Pipeline
 Combines: lambda_cut.sh, telegram_listener.sh, generate_script.sh, onboard.sh
 """
-import argparse, base64, glob, html, json, os, re, shutil, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
+import argparse, base64, glob, json, os, random, re, shutil, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request
 from update_manager import (
     get_local_version,
     get_release_notes,
@@ -13,8 +13,10 @@ from update_manager import (
 )
 from keychain_manager import (
     get_gemini_keys,
+    get_gcloud_tts_keys,
     get_service_password,
     set_gemini_keys,
+    set_gcloud_tts_keys,
     set_service_password,
 )
 # ─── Paths ────────────────────────────────────────────────────────────────────
@@ -289,7 +291,6 @@ def phase_transcribe(video):
     return json_file
 
 # ─── Phase 3: Scripts ─────────────────────────────────────────────────────────
-import random as _random
 
 SCRIPT_PERSPECTIVES = [
     "Focus on the villain's motive — why did they do what they did?",
@@ -399,8 +400,8 @@ def _gemini_script(text, script_num, keys_file):
     if not keys:
         raise RuntimeError("No API keys in keychain or gemini_keys.txt")
 
-    variant_key = _random.choice(list(SCRIPT_VARIANTS.keys()))
-    perspective = _random.choice(SCRIPT_PERSPECTIVES)
+    variant_key = random.choice(list(SCRIPT_VARIANTS.keys()))
+    perspective = random.choice(SCRIPT_PERSPECTIVES)
     game_title = env("GAME_TITLE", "")
     prompt = _build_script_prompt(variant_key, perspective, game_title).format(transcript=text[:3000])
     log(f"   Variant: {SCRIPT_VARIANTS[variant_key]['style']}, Perspective: {perspective[:50]}...")
@@ -681,9 +682,12 @@ def _gemini_tts_api(text, out_pcm, voice, style):
             f.write(base64.b64decode(audio))
 
 def _gcloud_tts_api(text, out_pcm, voice, style):
-    api_key = env("GCLOUD_TTS_API_KEY")
-    if not api_key:
-        raise RuntimeError("GCLOUD_TTS_API_KEY not configured")
+    keys = get_gcloud_tts_keys()
+    if not keys:
+        api_key = env("GCLOUD_TTS_API_KEY")
+        if not api_key:
+            raise RuntimeError("GCLOUD_TTS_API_KEY not configured")
+        keys = [api_key]
     
     if style:
         text = f"{style} {text}"
@@ -711,13 +715,31 @@ def _gcloud_tts_api(text, out_pcm, voice, style):
         "audioConfig": {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000}
     }).encode()
     
-    url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}"
-    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        r = json.loads(resp.read())
-        audio = r["audioContent"]
-        with open(out_pcm, "wb") as f:
-            f.write(base64.b64decode(audio))
+    for i in range(len(keys)):
+        key = keys[i]
+        url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={key}"
+        for attempt in range(3):
+            try:
+                time.sleep(0.5)
+                req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    r = json.loads(resp.read())
+                    audio = r["audioContent"]
+                    with open(out_pcm, "wb") as f:
+                        f.write(base64.b64decode(audio))
+                    return
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    time.sleep((2 ** attempt) * 5)
+                else:
+                    log(f"   HTTP {e.code} with gcloud key")
+                    break
+            except Exception as e:
+                log(f"   Error: {e}")
+                break
+        log(f"   Key failed, trying next...")
+    
+    raise RuntimeError("All Google Cloud TTS keys failed")
 
 def _strip_title(script_text):
     lines = script_text.strip().split("\n")
@@ -1461,7 +1483,7 @@ WantedBy=default.target
 
     # Rotate TTS voice on each listener start
     voice_pool = ["Vindemiatrix", "Aoede", "Callirhoe", "Gacrux", "Sulafat", "Leda"]
-    rotated_voice = _random.choice(voice_pool)
+    rotated_voice = random.choice(voice_pool)
     update_env_var("TTS_VOICE", rotated_voice)
     print(f"Voice rotated to: {rotated_voice}")
 
