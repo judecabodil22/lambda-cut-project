@@ -266,11 +266,14 @@ def phase_transcribe(video):
         log(f"stable-whisper failed: {e}")
         log("Falling back to stable-ts CLI...")
         try:
+            log(f"   stable-ts CLI: output_dir={TRANSCRIPTS_DIR}")
             r = run(["stable-ts", "-y", video, "--output_dir", TRANSCRIPTS_DIR,
                      "--output_format", "srt,json", "--word_timestamps", "False",
                      "--vad", "True", "--language", "en"], check=False)
+            if r.stdout:
+                log(f"   stable-ts stdout: {r.stdout[-300:]}")
             if r.returncode != 0:
-                log_error(f"stable-ts CLI failed: {r.stderr[-300:] if r.stderr else 'Unknown error'}")
+                log_error(f"stable-ts CLI failed (exit {r.returncode}): {r.stderr[-300:] if r.stderr else 'Unknown error'}")
         except Exception as ts_e:
             log_error(f"stable-ts fallback also failed: {ts_e}")
 
