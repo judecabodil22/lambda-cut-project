@@ -656,6 +656,12 @@ def phase_clips(video, json_file, duration, num_hours):
 
 # ─── Phase 5: TTS ─────────────────────────────────────────────────────────────
 def _tts_api(text, out_pcm, voice, style):
+    provider = env("TTS_PROVIDER", "gemini")
+    if provider == "gcloud":
+        return _gcloud_tts_api(text, out_pcm, voice, style)
+    return _gemini_tts_api(text, out_pcm, voice, style)
+
+def _gemini_tts_api(text, out_pcm, voice, style):
     if style:
         text = f"{style} {text}"
     body = json.dumps({
@@ -671,6 +677,45 @@ def _tts_api(text, out_pcm, voice, style):
     with urllib.request.urlopen(req, timeout=120) as resp:
         r = json.loads(resp.read())
         audio = r["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
+        with open(out_pcm, "wb") as f:
+            f.write(base64.b64decode(audio))
+
+def _gcloud_tts_api(text, out_pcm, voice, style):
+    api_key = env("GCLOUD_TTS_API_KEY")
+    if not api_key:
+        raise RuntimeError("GCLOUD_TTS_API_KEY not configured")
+    
+    if style:
+        text = f"{style} {text}"
+    
+    voice_map = {
+        "en-US-Neural2-C": {"languageCode": "en-US", "name": "en-US-Neural2-C"},
+        "en-US-Neural2-D": {"languageCode": "en-US", "name": "en-US-Neural2-D"},
+        "en-US-Neural2-E": {"languageCode": "en-US", "name": "en-US-Neural2-E"},
+        "en-US-Neural2-F": {"languageCode": "en-US", "name": "en-US-Neural2-F"},
+        "en-US-Neural2-G": {"languageCode": "en-US", "name": "en-US-Neural2-G"},
+        "en-US-Neural2-H": {"languageCode": "en-US", "name": "en-US-Neural2-H"},
+        "en-US-Neural2-I": {"languageCode": "en-US", "name": "en-US-Neural2-I"},
+        "en-US-Neural2-J": {"languageCode": "en-US", "name": "en-US-Neural2-J"},
+        "en-US-Studio-O": {"languageCode": "en-US", "name": "en-US-Studio-O"},
+        "en-US-Studio-Q": {"languageCode": "en-US", "name": "en-US-Studio-Q"},
+        "en-US-Chirp-HD-D": {"languageCode": "en-US", "name": "en-US-Chirp-HD-D"},
+        "en-US-Chirp-HD-F": {"languageCode": "en-US", "name": "en-US-Chirp-HD-F"},
+    }
+    
+    voice_config = voice_map.get(voice, {"languageCode": "en-US", "name": "en-US-Neural2-C"})
+    
+    body = json.dumps({
+        "input": {"text": text},
+        "voice": voice_config,
+        "audioConfig": {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000}
+    }).encode()
+    
+    url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}"
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        r = json.loads(resp.read())
+        audio = r["audioContent"]
         with open(out_pcm, "wb") as f:
             f.write(base64.b64decode(audio))
 
@@ -1059,11 +1104,25 @@ def process_cmd(text, chat_id):
             threading.Thread(target=_run, daemon=True).start()
 
     elif cmd in ("/set_voice", "/setvoice"):
+        provider = env("TTS_PROVIDER", "gemini")
         if not args:
-            tg_send("Usage: /set_voice Algenib\nVoices: Zephyr, Puck, Charon, Kore, Fenrir, Leda, Orus, Aoede, Callirrhoe, Autonoe, Enceladus, Iapetus, Umbriel, Algieba, Despina, Erinome, Algenib, Rasalgethi, Schedar, Gacrux, Pulcherrima, Achird, Zubenelgenubi, Vindemiatrix, Sadachbia, Sadaltager, Sulafat, Achernar, Alnilam, Laomedeia")
+            if provider == "gcloud":
+                tg_send("Usage: /set_voice en-US-Neural2-C\nGoogle Cloud Voices: en-US-Neural2-C, en-US-Neural2-D, en-US-Neural2-E, en-US-Neural2-F, en-US-Neural2-G, en-US-Neural2-H, en-US-Neural2-I, en-US-Neural2-J, en-US-Studio-O, en-US-Studio-Q, en-US-Chirp-HD-D, en-US-Chirp-HD-F")
+            else:
+                tg_send("Usage: /set_voice Algenib\nGemini Voices: Zephyr, Puck, Charon, Kore, Fenrir, Leda, Orus, Aoede, Callirrhoe, Autonoe, Enceladus, Iapetus, Umbriel, Algieba, Despina, Erinome, Algenib, Rasalgethi, Schedar, Gacrux, Pulcherrima, Achird, Zubenelgenubi, Vindemiatrix, Sadachbia, Sadaltager, Sulafat, Achernar, Alnilam, Laomedeia")
         else:
             update_env_var("TTS_VOICE", args)
             tg_send(f"Voice set to: {args}")
+
+    elif cmd in ("/set_tts_provider", "/settts"):
+        if not args:
+            current = env("TTS_PROVIDER", "gemini")
+            tg_send(f"Current TTS provider: {current}\nUsage: /set_tts_provider gemini\ngcloud\n\nUse 'gemini' for Chirp 3 voices, 'gcloud' for Neural2/Studio voices.\nNote: gcloud requires GCLOUD_TTS_API_KEY in .env")
+        elif args in ("gemini", "gcloud"):
+            update_env_var("TTS_PROVIDER", args)
+            tg_send(f"TTS provider set to: {args}")
+        else:
+            tg_send("Invalid provider. Use 'gemini' or 'gcloud'.")
 
     elif cmd in ("/set_style", "/setstyle"):
         if not args:
@@ -1118,6 +1177,7 @@ def process_cmd(text, chat_id):
             tg_send(f"Game set to: {args}")
 
     elif cmd in ("/config", "/settings"):
+        provider = env("TTS_PROVIDER", "gemini")
         voice = env("TTS_VOICE", "Vindemiatrix")
         style = env("TTS_STYLE") or "(none)"
         index = env("PLAYLIST_INDEX", "1")
@@ -1129,7 +1189,7 @@ def process_cmd(text, chat_id):
         sc = count_files(os.path.join(WORKSPACE, "tts/*.srt"))
         rc = count_files(os.path.join(WORKSPACE, "scripts/*.txt"))
         cc = count_files(os.path.join(WORKSPACE, "shorts/*.mp4"))
-        tg_send(f"Config:\nGame: {game}\nVoice: {voice}\nStyle: {style}\nIndex: {index}\nClips/hr: {clips}\nStatus: {status}\n\nFiles:\nScripts: {rc}\nClips: {cc}\nTTS WAVs: {wc}\nTTS SRTs: {sc}")
+        tg_send(f"Config:\nProvider: {provider}\nGame: {game}\nVoice: {voice}\nStyle: {style}\nIndex: {index}\nClips/hr: {clips}\nStatus: {status}\n\nFiles:\nScripts: {rc}\nClips: {cc}\nTTS WAVs: {wc}\nTTS SRTs: {sc}")
 
     elif cmd == "/status":
         listener_status = "No"
@@ -1205,6 +1265,7 @@ Commands:
 /skip_phase 1,2 - Skip specific phases
 
 /set_voice Puck    - Change TTS voice
+/set_tts_provider gcloud - Switch TTS provider (gemini/gcloud)
 /set_style Say...  - Set style prefix
 /set_style         - Clear style
 /set_index 3      - Set playlist index (1=first video)
