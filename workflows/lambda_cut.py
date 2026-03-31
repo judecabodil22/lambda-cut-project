@@ -700,7 +700,14 @@ def phase_clips(video, json_file, duration, num_hours):
     notify(f"Phase 4 Complete: {clips_generated} clips generated")
 
 # ─── Phase 5: TTS ─────────────────────────────────────────────────────────────
-def _tts_api(text, out_pcm, voice, style, retries=5, delay=30):
+def _load_api_keys():
+    keys_file = os.path.join(os.path.dirname(WORKSPACE), "gemini_keys.txt")
+    if os.path.exists(keys_file):
+        with open(keys_file) as f:
+            return [line.strip() for line in f if line.strip()]
+    return []
+
+def _tts_api(text, out_pcm, voice, style, retries=3, delay=60):
     if style:
         text = f"{style} {text}"
     body = json.dumps({
@@ -710,25 +717,35 @@ def _tts_api(text, out_pcm, voice, style, retries=5, delay=30):
             "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": voice}}}
         }
     }).encode()
-    key = env("GEMINI_API_KEY")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key={key}"
-    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
     
-    for attempt in range(retries):
-        try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                r = json.loads(resp.read())
-                audio = r["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
-                with open(out_pcm, "wb") as f:
-                    f.write(base64.b64decode(audio))
-                return True
-        except urllib.error.HTTPError as e:
-            if e.code == 429 and attempt < retries - 1:
-                log(f"   Rate limited, waiting {delay}s before retry ({attempt + 1}/{retries})...")
-                time.sleep(delay)
-                delay *= 2
-            else:
-                raise
+    api_keys = _load_api_keys()
+    if not api_keys:
+        api_keys = [env("GEMINI_API_KEY")]
+    
+    time.sleep(2)  # Rate limit: 2 requests per second
+    
+    for key in api_keys:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key={key}"
+        req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+        
+        for attempt in range(retries):
+            try:
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    r = json.loads(resp.read())
+                    audio = r["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
+                    with open(out_pcm, "wb") as f:
+                        f.write(base64.b64decode(audio))
+                    return True
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt < retries - 1:
+                    wait = delay * (2 ** attempt)
+                    log(f"   Key {key[:20]}... rate limited, waiting {wait}s...")
+                    time.sleep(wait)
+                else:
+                    log(f"   Key {key[:20]}... failed: {e.code}")
+                    break
+        log(f"   Switching to next API key...")
+    
     return False
 
 def _strip_title(script_text):
@@ -756,7 +773,7 @@ def phase_tts(duration, num_hours):
     log("Phase 5: Generating TTS...")
     notify("Phase 5 Started: Generating TTS...")
     style = env("TTS_STYLE", "")
-    delay = int(env("TTS_DELAY", "60"))
+    delay = int(env("TTS_DELAY", "120"))
 
     tts_generated = 0
     for i in range(1, num_hours + 1):
