@@ -4,7 +4,8 @@
 # Core
 yt-dlp>=2024.1.0
 
-# Transcription
+# Transcription (faster-whisper is primary, with fallbacks)
+faster-whisper>=1.0.0
 stable-ts>=2.0.0
 
 # Security: System keychain for API keys

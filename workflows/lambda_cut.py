@@ -253,30 +253,76 @@ def phase_transcribe(video):
         return json_file
 
     set_status("Phase 2: Transcribing...")
-    log("Phase 2: Transcribing via stable-ts...")
+    log("Phase 2: Transcribing...")
+    
+    transcription_success = False
     
     try:
-        import stable_whisper
-        log("Using stable-whisper for transcription...")
-        model = stable_whisper.load_model("base")
-        result = model.transcribe(video, language="en", vad=True)
-        result.to_srt_vtt(os.path.join(TRANSCRIPTS_DIR, f"{basename}.srt"))  # type: ignore[attr-defined]
-        result.save_as_json(os.path.join(TRANSCRIPTS_DIR, f"{basename}.json"))  # type: ignore[attr-defined]
-        log("stable-whisper transcription complete")
+        from faster_whisper import WhisperModel
+        log("Using faster-whisper for transcription (primary, fastest)...")
+        model = WhisperModel("base", device="cpu", compute_type="int8")
+        segments, info = model.transcribe(video, language="en", vad_filter=True)
+        srt_path = os.path.join(TRANSCRIPTS_DIR, f"{basename}.srt")
+        json_path = os.path.join(TRANSCRIPTS_DIR, f"{basename}.json")
+        
+        def fmt_srt_time(seconds):
+            hrs = int(seconds // 3600)
+            mins = int((seconds % 3600) // 60)
+            secs = int(seconds % 60)
+            ms = int((seconds % 1) * 1000)
+            return f"{hrs:02}:{mins:02}:{secs:02},{ms:03}"
+        
+        seg_list = []
+        with open(srt_path, "w") as srt_f:
+            sidx = 1
+            for segment in segments:
+                start = segment.start
+                end = segment.end
+                text = segment.text.strip()
+                if text:
+                    seg_list.append({"start": start, "end": end, "text": text})
+                    srt_f.write(f"{sidx}\n")
+                    srt_f.write(f"{fmt_srt_time(start)} --> {fmt_srt_time(end)}\n")
+                    srt_f.write(f"{text}\n\n")
+                    sidx += 1
+        
+        import json
+        with open(json_path, "w") as json_f:
+            json.dump({"segments": seg_list}, json_f)
+        
+        log("faster-whisper transcription complete")
+        transcription_success = True
     except Exception as e:
-        log(f"stable-whisper failed: {e}")
-        log("Falling back to stable-ts CLI...")
-        try:
-            log(f"   stable-ts CLI: output_dir={TRANSCRIPTS_DIR}")
-            r = run(["stable-ts", "-y", video, "--output_dir", TRANSCRIPTS_DIR,
-                     "--output_format", "srt,json", "--word_timestamps", "False",
-                     "--vad", "True", "--language", "en"], check=False)
-            if r.stdout:
-                log(f"   stable-ts stdout: {r.stdout[-300:]}")
-            if r.returncode != 0:
-                log_error(f"stable-ts CLI failed (exit {r.returncode}): {r.stderr[-300:] if r.stderr else 'Unknown error'}")
-        except Exception as ts_e:
-            log_error(f"stable-ts fallback also failed: {ts_e}")
+        log(f"faster-whisper failed: {e}")
+        
+        if not transcription_success:
+            try:
+                import stable_whisper
+                log("Falling back to stable-whisper...")
+                model = stable_whisper.load_model("base")
+                result = model.transcribe(video, language="en", vad=True)
+                result.to_srt_vtt(os.path.join(TRANSCRIPTS_DIR, f"{basename}.srt"))
+                result.save_as_json(os.path.join(TRANSCRIPTS_DIR, f"{basename}.json"))
+                log("stable-whisper transcription complete")
+                transcription_success = True
+            except Exception as e2:
+                log(f"stable-whisper failed: {e2}")
+        
+        if not transcription_success:
+            log("Falling back to stable-ts CLI...")
+            try:
+                log(f"   stable-ts CLI: output_dir={TRANSCRIPTS_DIR}")
+                r = run(["stable-ts", "-y", video, "--output_dir", TRANSCRIPTS_DIR,
+                         "--output_format", "srt,json", "--word_timestamps", "False",
+                         "--vad", "True", "--language", "en"], check=False)
+                if r.stdout:
+                    log(f"   stable-ts stdout: {r.stdout[-300:]}")
+                if r.returncode != 0:
+                    log_error(f"stable-ts CLI failed (exit {r.returncode}): {r.stderr[-300:] if r.stderr else 'Unknown error'}")
+                else:
+                    transcription_success = True
+            except Exception as ts_e:
+                log_error(f"stable-ts fallback also failed: {ts_e}")
 
     if not os.path.exists(json_file):
         log_error("Phase 2 Failed: Transcript file not created")

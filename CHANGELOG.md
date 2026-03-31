@@ -13,6 +13,7 @@ All notable changes to this project documented here.
 | Voice rotation | Voice rotates randomly on each listener restart from a pool of 6 female voices |
 | Game title | Set game title via /set_game for script context |
 | /voices command | Lists available TTS voices by gender |
+| Faster transcription | Uses faster-whisper as primary (4x faster), with stable-whisper and stable-ts fallbacks |
 
 ### Improvements
 
