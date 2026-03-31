@@ -1113,7 +1113,7 @@ def process_cmd(text, chat_id):
     elif cmd in ("/voices", "/listvoices"):
         tg_send("""Gemini TTS Voices (Chirp 3):
 
-Female: Vindemiatrix, Aoede, Callirhoe, Gacrux, Sulafat, Leda, Kore, Enceladus, Erinome, Despina, Alnilam, Laomedeia, Achernar, Pulcherrima, Zephyr
+Female: Vindemiatrix, Aoede, Callirrhoe, Gacrux, Sulafat, Leda, Kore, Enceladus, Erinome, Despina, Alnilam, Laomedeia, Achernar, Pulcherrima, Zephyr
 Male: Puck, Charon, Fenrir, Orus, Iapetus, Umbriel, Algieba, Rasalgethi, Schedar, Sadachbia, Sadaltager, Achird, Zubenelgenubi, Algenib, Autonoe
 
 Use /set_voice <name> to select.
@@ -1453,7 +1453,7 @@ WantedBy=default.target
         print("No updates available.")
 
     # Rotate TTS voice on each listener start
-    voice_pool = ["Vindemiatrix", "Aoede", "Callirhoe", "Gacrux", "Sulafat", "Leda"]
+    voice_pool = ["Vindemiatrix", "Aoede", "Callirrhoe", "Gacrux", "Sulafat", "Leda"]
     rotated_voice = random.choice(voice_pool)
     update_env_var("TTS_VOICE", rotated_voice)
     print(f"Voice rotated to: {rotated_voice}")
