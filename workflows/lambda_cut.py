@@ -700,7 +700,7 @@ def phase_clips(video, json_file, duration, num_hours):
     notify(f"Phase 4 Complete: {clips_generated} clips generated")
 
 # ─── Phase 5: TTS ─────────────────────────────────────────────────────────────
-def _tts_api(text, out_pcm, voice, style):
+def _tts_api(text, out_pcm, voice, style, retries=5, delay=30):
     if style:
         text = f"{style} {text}"
     body = json.dumps({
@@ -713,11 +713,23 @@ def _tts_api(text, out_pcm, voice, style):
     key = env("GEMINI_API_KEY")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key={key}"
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        r = json.loads(resp.read())
-        audio = r["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
-        with open(out_pcm, "wb") as f:
-            f.write(base64.b64decode(audio))
+    
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                r = json.loads(resp.read())
+                audio = r["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
+                with open(out_pcm, "wb") as f:
+                    f.write(base64.b64decode(audio))
+                return True
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < retries - 1:
+                log(f"   Rate limited, waiting {delay}s before retry ({attempt + 1}/{retries})...")
+                time.sleep(delay)
+                delay *= 2
+            else:
+                raise
+    return False
 
 def _strip_title(script_text):
     lines = script_text.strip().split("\n")
@@ -744,7 +756,7 @@ def phase_tts(duration, num_hours):
     log("Phase 5: Generating TTS...")
     notify("Phase 5 Started: Generating TTS...")
     style = env("TTS_STYLE", "")
-    delay = int(env("TTS_DELAY", "300"))
+    delay = int(env("TTS_DELAY", "60"))
 
     tts_generated = 0
     for i in range(1, num_hours + 1):
