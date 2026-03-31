@@ -13,7 +13,8 @@ All notable changes to this project documented here.
 | Voice rotation | Voice rotates randomly on each listener restart from a pool of 6 female voices |
 | Game title | Set game title via /set_game for script context |
 | /voices command | Lists available TTS voices by gender |
-| Faster transcription | Uses faster-whisper as primary (4x faster), with stable-whisper and stable-ts fallbacks |
+| Faster transcription | Uses faster-whisper as primary (4x faster), with stable-ts fallback |
+| Multi-key TTS fallback | Automatically rotates through multiple API keys on rate limit (429) |
 
 ### Improvements
 
@@ -21,6 +22,9 @@ All notable changes to this project documented here.
 |--------|---------|
 | Telegram restart loop fix | Persists update offset to prevent /restart_listener loop |
 | Voice rotation fix | Listener restart now uses systemd to ensure voice rotates properly |
+| Voice name fix | Corrected Callirhoe to Callirrhoe for Gemini TTS API |
+| TTS retry logic | 5 retries with 60s initial delay and exponential backoff |
+| TTS rate limiting | 2 second delay between requests to respect API limits |
 | HTML parse mode removed | Messages now sent as plain text to prevent parse errors |
 | Script log improvements | Logs which variant/perspective used for each script |
 
@@ -29,6 +33,7 @@ All notable changes to this project documented here.
 | Change | Details |
 |--------|---------|
 | Removed Google Cloud TTS | Gemini TTS provides better style support for character voices |
+| TTS delay | Reduced from 300s to 120s between scripts |
 
 ---
 

@@ -86,10 +86,15 @@ For troubleshooting help, see [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.m
 
 ## Recent Highlights
 
-- **Local recording integration** — `/run_local`, `/set_recording_path`, `/source` commands for processing local videos
+- **Script prompt variants** — 4 styles: mystery recap, breakdown, timeline, moral/lesson
+- **Random perspectives** — 8 angles per script (villain's motive, hero's mistake, turning point, etc.)
+- **Voice rotation** — Random female voice on each listener restart
+- **Multi-key TTS fallback** — Automatic rotation through multiple API keys on rate limit
+- **Faster transcription** — faster-whisper (4x faster) with stable-ts fallback
+- **Local recording integration** — `/run_local`, `/set_recording_path`, `/source` commands
 - **Auto‑update system** — automatic update detection, backup, and rollback
 - **OBS recording workflow** — record locally while streaming for maximum quality
-- **Telegram bot control** — full command set: `/run_pipeline`, `/run_phase`, `/skip_phase`, `/set_voice`, `/set_style`, `/config`, `/status`, `/debug`, and more
+- **Telegram bot control** — full command set with status and logging
 
 ## Features
 
@@ -98,10 +103,10 @@ For troubleshooting help, see [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.m
 | Phase | Name | Description |
 |-------|------|-------------|
 | 1 | Download | Download latest video from YouTube (best quality) |
-| 2 | Transcribe | Generate transcript with stable-ts |
-| 3 | Scripts | AI-generated short scripts via Gemini |
-| 4 | Clips | Extract video clips based on scenes |
-| 5 | TTS | Generate narration audio + subtitles |
+| 2 | Transcribe | Generate transcript with faster-whisper (primary) or stable-ts (fallback) |
+| 3 | Scripts | AI-generated short scripts via Gemini with 4 prompt variants + 8 perspectives |
+| 4 | Clips | Extract video clips based on scenes with VAAPI encoding |
+| 5 | TTS | Generate narration audio + subtitles with multi-key fallback |
 
 ### Telegram Commands
 
@@ -115,7 +120,10 @@ For troubleshooting help, see [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.m
 | `/set_voice Puck` | Change TTS voice |
 | `/set_style Say...` | Set style prefix |
 | `/set_index 3` | Set playlist index |
+| `/set_game` | Set game title for script context |
 | `/set_recording_path` | Change recording directory |
+| `/voices` | List available TTS voices by gender |
+| `/restart_listener` | Restart listener (rotates voice) |
 | `/source` | Show current recording path |
 | `/config` | Show settings |
 | `/status` | Show listener and pipeline status |
@@ -123,7 +131,8 @@ For troubleshooting help, see [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.m
 | `/update` | Check for updates |
 | `/stop_listener` | Stop the listener |
 | `/stop_pipeline` | Stop running pipeline |
-| `/debug` | Show recent debug log entries |
+| `/logs` | Show recent pipeline logs |
+| `/help` | Show help message |
 
 ### CLI Commands
 

@@ -75,7 +75,7 @@ Available Gemini TTS voices (default: Vindemiatrix):
 | **Leda** | Youthful and energetic |
 | **Zephyr** | Bright and cheerful |
 | **Autonoe** | Bright and optimistic |
-| **Callirhoe** | Easy-going and relaxed |
+| **Callirrhoe** | Easy-going and relaxed |
 | **Despina** | Smooth and flowing |
 | **Erinome** | Clear and precise |
 | **Gacrux** | Mature and experienced |
