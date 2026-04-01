@@ -1,4 +1,4 @@
-# Lambda Cut 2.8.0
+# Lambda Cut 3.0.0
 
 [![Version](https://img.shields.io/badge/version-2.8.0-blue.svg)](./VERSION)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
