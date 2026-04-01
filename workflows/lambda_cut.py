@@ -352,57 +352,67 @@ SCRIPT_PERSPECTIVES = [
 SCRIPT_VARIANTS = {
     "mystery_recap": {
         "style": "Mystery Recap",
-        "instruction": """Rewrite this transcript into a mysterious, suspenseful narrative. Treat the events like a puzzle the viewer is trying to solve. Drop clues, withhold the answer until the end. Dark, eerie tone.""",
+        "voice_style": "Speak with intrigue and mystery. Drop hints naturally through sentences, not mysterious fragments. Build suspense through the story flow.",
+        "instruction": """Write a mystery recap in complete, natural sentences. NO poetic fragments or mysterious one-liners. Tell the story chronologically while hinting at secrets. Start with the hook, build the clues naturally, end with an open question. Keep it 150-250 words.""",
     },
     "breakdown": {
         "style": "Breakdown",
-        "instruction": """Rewrite this transcript as an analytical breakdown. Explain WHY things happened, not just WHAT happened. Connect cause and effect. Make the viewer understand the logic behind the events. Authoritative, knowledgeable tone.""",
+        "voice_style": "Speak confidently and authoritatively. Explain causes and effects clearly, like an expert sharing knowledge.",
+        "instruction": """Write an analytical breakdown. Explain WHY things happened, not just WHAT. Connect cause and effect in flowing paragraphs. Be authoritative and informative. Keep it 150-250 words.""",
     },
     "timeline": {
         "style": "Timeline",
-        "instruction": """Rewrite this transcript as a chronological unfolding of events. Start from the moment everything began and build toward the climax. Each sentence should push the timeline forward. Urgent, escalating tone.""",
+        "voice_style": "Speak with urgency and forward momentum. Keep the story moving, build to the climax naturally.",
+        "instruction": """Write a chronological timeline. Tell events in order from beginning to climax. Each sentence should flow naturally into the next. Build momentum through time progression. NO fragmented bullet points. Keep it 150-250 words.""",
     },
     "lesson": {
         "style": "Moral/Lesson",
-        "instruction": """Rewrite this transcript to highlight the deeper meaning or lesson. What did the characters learn? What could have been different? Make the viewer reflect on their own life through this story. Contemplative, thought-provoking tone.""",
+        "voice_style": "Speak thoughtfully and reflectively. Like sharing wisdom with a friend, measured and genuine.",
+        "instruction": """Write a reflective lesson. Explain what was learned and what could have been different. Use complete sentences that flow naturally. End with a thought-provoking question in sentence form. Keep it 150-250 words.""",
     },
     "narrative": {
         "style": "Narrative",
-        "instruction": """Rewrite this transcript as a compelling first-person narrative. Tell the story as if you experienced it yourself. Use vivid descriptions and sensory details. Make the viewer feel immersed in the events. Engaging, story-telling tone.""",
+        "voice_style": "Speak naturally like telling a story to a friend. Conversational, engaging, keep the flow moving.",
+        "instruction": """Write a first-person narrative as if you're telling a friend what happened. Use vivid but natural descriptions. Flow from one moment to the next. No bullet points or fragments. Keep it 150-250 words.""",
     },
     "news_report": {
         "style": "News Report",
-        "instruction": """Rewrite this transcript as a professional news report. Present facts objectively with clear context. Use journalistic language and structure. Lead with the most important information. Objective, factual tone.""",
+        "voice_style": "Speak like a professional news reporter. Clear, factual, objective. Present information in order of importance.",
+        "instruction": """Write a professional news report. Lead with the key fact, add context in flowing paragraphs. Use objective, factual language. NO dramatic fragments. Keep it 150-250 words.""",
     },
     "documentary": {
         "style": "Documentary",
-        "instruction": """Rewrite this transcript as a documentary narration. Explore the deeper context and significance of events. Add historical or psychological insight. Make the viewer learn something new. Informative, insightful tone.""",
+        "voice_style": "Speak like a documentary host. Informed, warm, educational. Add context naturally.",
+        "instruction": """Write a documentary-style narration. Add historical or psychological context naturally through flowing paragraphs. Inform and educate without being dry. Keep it 150-250 words.""",
     },
     "true_crime": {
         "style": "True Crime",
-        "instruction": """Rewrite this transcript in the style of a true crime podcast. Build tension and suspense. Focus on the investigation and revelations. Use dramatic pauses and cliffhangers. Investigative, gripping tone.""",
+        "voice_style": "Speak with investigative intensity. Build tension through the story, pause for effect naturally.",
+        "instruction": """Write a true crime story. Build investigation and tension through natural sentences. Tell what was discovered and how. Flow from discovery to revelation. Keep it 150-250 words.""",
     },
     "character_pov": {
         "style": "Character POV",
-        "instruction": """Rewrite this transcript from the perspective of one of the main characters. Show their internal thoughts and feelings. Make it personal and intimate. First-person, emotionally raw tone.""",
+        "voice_style": "Speak as if you ARE the character. Personal, emotional, raw. First person, genuine.",
+        "instruction": """Write from the main character's perspective. Show internal thoughts and feelings in first person. Make it personal and intimate. Flow from emotion to emotion naturally. Keep it 150-250 words.""",
     },
     "true_story": {
         "style": "True Story",
-        "instruction": """Rewrite this transcript as someone sharing an incredible true story. Start with a hook that grabs attention. Build toward a satisfying conclusion. Conversational, storytelling tone like a friend sharing an amazing experience.""",
+        "voice_style": "Speak like sharing an incredible story with a friend. Conversational, engaging, hook them early.",
+        "instruction": """Write like you're sharing an amazing true story with a friend. Start with a hook, build naturally, end with impact. Conversational flow throughout. NO poetic fragments. Keep it 150-250 words.""",
     },
 }
 
 TTS_STYLE_OPTIONS = [
-    "Speak in a calm, relaxed manner with natural pauses. Like a friend sharing a story.",
-    "Use a dramatic, intense tone with emphasis on key moments. Build tension in your voice.",
-    "Speak conversationally, as if explaining to a friend. Keep it natural and flowing.",
-    "Use a soft, gentle voice with careful pronunciation. Create an intimate atmosphere.",
-    "Speak with urgency and energy. Keep the momentum going, don't pause too long.",
-    "Speak clearly and thoughtfully. Take your time with important points.",
-    "Use a warm, friendly tone. Make the listener feel comfortable and engaged.",
-    "Speak in a suspenseful whisper. Draw the listener in with mysterious intrigue.",
-    "Use a confident, authoritative voice. Make every statement sound well-informed.",
-    "Speak with a slight emotional weight. Convey seriousness and depth.",
+    "Speak with intrigue and mystery. Drop hints naturally through sentences, not mysterious fragments.",
+    "Speak confidently and authoritatively. Explain causes and effects clearly, like an expert.",
+    "Speak with urgency and forward momentum. Keep the story moving, build to the climax naturally.",
+    "Speak thoughtfully and reflectively. Like sharing wisdom with a friend, measured and genuine.",
+    "Speak naturally like telling a story to a friend. Conversational, engaging, keep the flow moving.",
+    "Speak like a professional news reporter. Clear, factual, objective. Present information in order.",
+    "Speak like a documentary host. Informed, warm, educational. Add context naturally.",
+    "Speak with investigative intensity. Build tension through the story, pause for effect naturally.",
+    "Speak as if you ARE the character. Personal, emotional, raw. First person, genuine.",
+    "Speak like sharing an incredible story with a friend. Conversational, engaging, hook them early.",
 ]
 
 def _build_script_prompt(variant_key, perspective, game_title):
@@ -414,6 +424,8 @@ Perspective: {perspective}
 
 {variant['instruction']}
 
+CRITICAL: Your output MUST be between 180 and 250 words. Write enough to tell a complete story. Aim for 200+ words.
+
 HARD RULES (never break these):
 - NO dialogue — never write what anyone "said", "told", "asked", or "replied"
 - NO first/second/third person narrator framing ("I saw", "the narrator says", "according to him")
@@ -424,26 +436,12 @@ HARD RULES (never break these):
 - NO abbreviations or symbols — spell everything out ("number one" not "#1", "dollars" not "$")
 - Write ONLY facts and description as if narrating events directly
 
-HOOK PATTERNS (pick one per script, vary across scripts):
-1. Surprising fact: State something shocking that happened
-2. Challenge: "Nobody thought this was possible until..."
-3. Impossible question: Pose a scenario viewers can't resist answering
-
-ENGAGEMENT TRIGGERS (use at least one):
-- End with a question that begs a comment: "What would you do?" / "Drop your answer"
-- Create rewatch value: Reveal a detail early that only makes sense at the end
-- Use "Wait for it..." or "Here's why..." sparingly — only when earned
-
-PACING FOR TTS:
-- Short punchy sentences build tension (5-10 words)
-- One slightly longer sentence to let the listener breathe
-- Then snap back to short for the ending
-- End on the hardest-hitting line — last sentence is the most memorable
-- Use periods to create natural pauses. Each sentence is one breath.
-
-TTS-SAFE LANGUAGE:
-- No words the AI will mispronounce: spell out numbers, avoid unusual names without context
-- No run-on sentences — if it's hard to say aloud, rewrite it
+WRITING STYLE:
+- Write in complete paragraphs, not fragments
+- Every sentence should flow naturally into the next
+- Avoid short one-sentence paragraphs
+- The script should sound like natural human speech when read aloud
+- Vary sentence length for natural rhythm
 
 OUTPUT FORMAT (strict):
 Line 1: TITLE: [6-10 word title, no punctuation, no clickbait caps]
@@ -454,9 +452,9 @@ TITLE RULES:
 - 6-10 words maximum
 - No ALL CAPS words
 - No exclamation marks or question marks
-- Hint at the mystery without spoiling the ending
+- Hint at the topic without spoiling the ending
 
-MAXIMUM: 150 words for the script body (excluding title).
+REQUIREMENT: Script body MUST be 180-250 words. Write a complete story, not fragments.
 
 Transcript:
 {{transcript}}"""
@@ -490,7 +488,7 @@ def _gemini_script(text, script_num, keys_file):
     log(f"   Variant: {SCRIPT_VARIANTS[variant_key]['style']}, Perspective: {perspective[:50]}...")
     body = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.5, "maxOutputTokens": 768}
+        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 3072}
     }).encode()
 
     start = (script_num - 1) % len(keys)
@@ -525,7 +523,7 @@ def _extract_hour(json_file, start, end):
     for seg in data["segments"]:
         if seg["start"] >= start and seg["end"] <= end:
             t = re.sub(r"<[^>]*>", "", seg["text"]).strip()
-            if t and len(t.split()) >= 10:
+            if t and len(t.split()) >= 3:
                 parts.append(t)
     return "\n".join(parts)
 
