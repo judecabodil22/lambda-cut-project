@@ -345,12 +345,14 @@ SCRIPT_PERSPECTIVES = [
     "Focus on the emotional undercurrent — what the characters felt but never said",
     "Focus on the consequence — what happened after the dust settled",
     "Focus on the mystery — what remains unexplained",
+    "Focus on the moral dilemma — what choices were made and why",
+    "Focus on the ripple effect — how one event changed everything",
 ]
 
 SCRIPT_VARIANTS = {
     "mystery_recap": {
         "style": "Mystery Recap",
-        "instruction": """Rewrite this transcript into a mysterious, suspenseful narrative. Treat the events like a puzzle the viewer is trying to solve. Drop clues, withhold the answer until the end. Dark, eerie tone. Make the viewer feel like they're uncovering something forbidden.""",
+        "instruction": """Rewrite this transcript into a mysterious, suspenseful narrative. Treat the events like a puzzle the viewer is trying to solve. Drop clues, withhold the answer until the end. Dark, eerie tone.""",
     },
     "breakdown": {
         "style": "Breakdown",
@@ -358,13 +360,50 @@ SCRIPT_VARIANTS = {
     },
     "timeline": {
         "style": "Timeline",
-        "instruction": """Rewrite this transcript as a chronological unfolding of events. Start from the moment everything began and build toward the climax. Each sentence should push the timeline forward. Urgent, escalating tone. The viewer should feel time running out.""",
+        "instruction": """Rewrite this transcript as a chronological unfolding of events. Start from the moment everything began and build toward the climax. Each sentence should push the timeline forward. Urgent, escalating tone.""",
     },
     "lesson": {
         "style": "Moral/Lesson",
         "instruction": """Rewrite this transcript to highlight the deeper meaning or lesson. What did the characters learn? What could have been different? Make the viewer reflect on their own life through this story. Contemplative, thought-provoking tone.""",
     },
+    "narrative": {
+        "style": "Narrative",
+        "instruction": """Rewrite this transcript as a compelling first-person narrative. Tell the story as if you experienced it yourself. Use vivid descriptions and sensory details. Make the viewer feel immersed in the events. Engaging, story-telling tone.""",
+    },
+    "news_report": {
+        "style": "News Report",
+        "instruction": """Rewrite this transcript as a professional news report. Present facts objectively with clear context. Use journalistic language and structure. Lead with the most important information. Objective, factual tone.""",
+    },
+    "documentary": {
+        "style": "Documentary",
+        "instruction": """Rewrite this transcript as a documentary narration. Explore the deeper context and significance of events. Add historical or psychological insight. Make the viewer learn something new. Informative, insightful tone.""",
+    },
+    "true_crime": {
+        "style": "True Crime",
+        "instruction": """Rewrite this transcript in the style of a true crime podcast. Build tension and suspense. Focus on the investigation and revelations. Use dramatic pauses and cliffhangers. Investigative, gripping tone.""",
+    },
+    "character_pov": {
+        "style": "Character POV",
+        "instruction": """Rewrite this transcript from the perspective of one of the main characters. Show their internal thoughts and feelings. Make it personal and intimate. First-person, emotionally raw tone.""",
+    },
+    "true_story": {
+        "style": "True Story",
+        "instruction": """Rewrite this transcript as someone sharing an incredible true story. Start with a hook that grabs attention. Build toward a satisfying conclusion. Conversational, storytelling tone like a friend sharing an amazing experience.""",
+    },
 }
+
+TTS_STYLE_OPTIONS = [
+    "Speak in a calm, relaxed manner with natural pauses. Like a friend sharing a story.",
+    "Use a dramatic, intense tone with emphasis on key moments. Build tension in your voice.",
+    "Speak conversationally, as if explaining to a friend. Keep it natural and flowing.",
+    "Use a soft, gentle voice with careful pronunciation. Create an intimate atmosphere.",
+    "Speak with urgency and energy. Keep the momentum going, don't pause too long.",
+    "Speak clearly and thoughtfully. Take your time with important points.",
+    "Use a warm, friendly tone. Make the listener feel comfortable and engaged.",
+    "Speak in a suspenseful whisper. Draw the listener in with mysterious intrigue.",
+    "Use a confident, authoritative voice. Make every statement sound well-informed.",
+    "Speak with a slight emotional weight. Convey seriousness and depth.",
+]
 
 def _build_script_prompt(variant_key, perspective, game_title):
     variant = SCRIPT_VARIANTS[variant_key]
@@ -1145,7 +1184,8 @@ def process_cmd(text, chat_id):
 Female: Vindemiatrix, Aoede, Callirrhoe, Gacrux, Sulafat, Leda, Kore, Enceladus, Erinome, Despina, Alnilam, Laomedeia, Achernar, Pulcherrima, Zephyr
 Male: Puck, Charon, Fenrir, Orus, Iapetus, Umbriel, Algieba, Rasalgethi, Schedar, Sadachbia, Sadaltager, Achird, Zubenelgenubi, Algenib, Autonoe
 
-Use /set_voice <name> to select.
+Random voice selection is enabled - voice rotates on each listener restart.
+Use /set_voice <name> to select a specific voice.
 Example: /set_voice Vindemiatrix""")
 
     elif cmd in ("/set_style", "/setstyle"):
@@ -1481,13 +1521,24 @@ WantedBy=default.target
     else:
         print("No updates available.")
 
-    # Rotate TTS voice on each listener start
-    voice_pool = ["Vindemiatrix", "Aoede", "Callirrhoe", "Gacrux", "Sulafat", "Leda"]
-    rotated_voice = random.choice(voice_pool)
+    # Rotate TTS voice on each listener start (all voices - male and female)
+    all_voices = [
+        "Vindemiatrix", "Aoede", "Callirrhoe", "Gacrux", "Sulafat", "Leda",
+        "Kore", "Enceladus", "Erinome", "Despina", "Alnilam", "Laomedeia",
+        "Achernar", "Pulcherrima", "Zephyr", "Puck", "Charon", "Fenrir",
+        "Orus", "Iapetus", "Umbriel", "Algieba", "Rasalgethi", "Schedar",
+        "Sadachbia", "Sadaltager", "Achird", "Zubenelgenubi", "Algenib", "Autonoe"
+    ]
+    rotated_voice = random.choice(all_voices)
+    
+    # Also rotate TTS style randomly
+    rotated_style = random.choice(TTS_STYLE_OPTIONS)
     update_env_var("TTS_VOICE", rotated_voice)
+    update_env_var("TTS_STYLE", rotated_style)
     print(f"Voice rotated to: {rotated_voice}")
+    print(f"Style rotated to: {rotated_style[:50]}...")
 
-    tg_send(f"Lambda Cut listener started (v{local_ver}).\nVoice: {rotated_voice}")
+    tg_send(f"Lambda Cut listener started (v{local_ver}).\nVoice: {rotated_voice}\nStyle: {rotated_style[:50]}...")
     offset = 0
     if os.path.exists(OFFSET_FILE):
         try:
