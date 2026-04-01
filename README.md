@@ -86,11 +86,13 @@ For troubleshooting help, see [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.m
 
 ## Recent Highlights
 
-- **Script prompt variants** — 4 styles: mystery recap, breakdown, timeline, moral/lesson
-- **Random perspectives** — 8 angles per script (villain's motive, hero's mistake, turning point, etc.)
-- **Voice rotation** — Random female voice on each listener restart
+- **10 script variants** — Narrative, News Report, Documentary, True Crime, Character POV, True Story, Mystery Recap, Breakdown, Timeline, Moral/Lesson
+- **10 perspectives** — Villain's motive, hero's mistake, hidden detail, cost of outcome, turning point, etc.
+- **Matching TTS styles** — Each script variant pairs with a specific voice style for natural flow
+- **30 voice rotation** — All Gemini voices (male + female) rotate randomly on listener restart
 - **Multi-key TTS fallback** — Automatic rotation through multiple API keys on rate limit
-- **Faster transcription** — faster-whisper (4x faster) with stable-ts fallback
+- **Faster transcription** — faster-whisper (4x faster) with SRT generation fix
+- **200+ word scripts** — Complete, natural flowing narratives (not poetic fragments)
 - **Local recording integration** — `/run_local`, `/set_recording_path`, `/source` commands
 - **Auto‑update system** — automatic update detection, backup, and rollback
 - **OBS recording workflow** — record locally while streaming for maximum quality
@@ -103,10 +105,10 @@ For troubleshooting help, see [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.m
 | Phase | Name | Description |
 |-------|------|-------------|
 | 1 | Download | Download latest video from YouTube (best quality) |
-| 2 | Transcribe | Generate transcript with faster-whisper (primary) or stable-ts (fallback) |
-| 3 | Scripts | AI-generated short scripts via Gemini with 4 prompt variants + 8 perspectives |
+| 2 | Transcribe | Generate transcript with faster-whisper |
+| 3 | Scripts | AI-generated scripts via Gemini (10 variants × 10 perspectives = 100 combinations) |
 | 4 | Clips | Extract video clips based on scenes with VAAPI encoding |
-| 5 | TTS | Generate narration audio + subtitles with multi-key fallback |
+| 5 | TTS | Generate narration audio + subtitles with 30 voice options |
 
 ### Telegram Commands
 

@@ -8,25 +8,26 @@ All notable changes to this project documented here.
 
 | Change | Details |
 |--------|---------|
-| Script prompt variants | 4 variants: mystery recap, breakdown, timeline, moral/lesson |
-| Random perspectives | 8 perspectives randomly applied to each script (villain's motive, hero's mistake, etc.) |
-| Voice rotation | Voice rotates randomly on each listener restart from a pool of 6 female voices |
-| Game title | Set game title via /set_game for script context |
-| /voices command | Lists available TTS voices by gender |
-| Faster transcription | Uses faster-whisper as primary (4x faster), with stable-ts fallback |
-| Multi-key TTS fallback | Automatically rotates through multiple API keys on rate limit (429) |
+| 10 script variants | Narrative, News Report, Documentary, True Crime, Character POV, True Story, Mystery Recap, Breakdown, Timeline, Moral/Lesson |
+| 10 perspectives | Villain's motive, hero's mistake, hidden detail, cost of outcome, turning point, emotional undercurrent, consequence, mystery, moral dilemma, ripple effect |
+| 10 TTS voice styles | Each script variant has a matching TTS voice style |
+| 30 voices | All Gemini voices (male + female) rotate randomly on listener restart |
+| Multi-key TTS fallback | Rotates through multiple API keys on rate limit (429) |
+| Faster transcription | Uses faster-whisper as primary (4x faster) |
+| SRT generation fix | Uses faster-whisper instead of broken stable-ts |
+| Script word requirement | 200+ words minimum for complete, natural scripts |
+| Improved transcript extraction | Minimum 3 words per segment (was 10) |
 
 ### Improvements
 
 | Change | Details |
 |--------|---------|
-| Telegram restart loop fix | Persists update offset to prevent /restart_listener loop |
 | Voice rotation fix | Listener restart now uses systemd to ensure voice rotates properly |
 | Voice name fix | Corrected Callirhoe to Callirrhoe for Gemini TTS API |
 | TTS retry logic | 5 retries with 60s initial delay and exponential backoff |
 | TTS rate limiting | 2 second delay between requests to respect API limits |
-| HTML parse mode removed | Messages now sent as plain text to prevent parse errors |
-| Script log improvements | Logs which variant/perspective used for each script |
+| Telegram restart loop fix | Persists update offset to prevent /restart_listener loop |
+| Script log | Logs which variant/perspective used for each script |
 
 ### Changes
 
