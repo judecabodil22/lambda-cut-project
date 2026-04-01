@@ -424,7 +424,7 @@ Perspective: {perspective}
 
 {variant['instruction']}
 
-CRITICAL: Your output MUST be between 180 and 250 words. Write enough to tell a complete story. Aim for 200+ words.
+CRITICAL REQUIREMENT: You MUST write AT LEAST 200 words. This is the minimum acceptable length. Do not stop until you have written at least 200 words. Your output should be a complete, flowing narrative.
 
 HARD RULES (never break these):
 - NO dialogue — never write what anyone "said", "told", "asked", or "replied"
@@ -454,7 +454,7 @@ TITLE RULES:
 - No exclamation marks or question marks
 - Hint at the topic without spoiling the ending
 
-REQUIREMENT: Script body MUST be 180-250 words. Write a complete story, not fragments.
+REQUIREMENT: Script body MUST be at least 200 words. Write a complete, flowing narrative, not fragments.
 
 Transcript:
 {{transcript}}"""
@@ -863,12 +863,20 @@ def phase_tts(duration, num_hours):
             else:
                 log(f"   Generating SRT for tts_{padded}.wav...")
                 srt_out = os.path.splitext(wav)[0] + ".srt"
-                r = run(["stable-ts", wav, "-o", srt_out, "--word_level", "false", "--device", "cpu",
-                         "--language", "en", "--output_format", "srt"], check=False)
-                if os.path.exists(srt):
-                    log(f"   tts_{padded}.srt created")
-                else:
-                    log_error(f"   SRT failed for tts_{padded}: {r.stderr[-200:] if r.stderr else 'Unknown'}")
+                try:
+                    from faster_whisper import WhisperModel
+                    model = WhisperModel("base", device="cpu", compute_type="int8")
+                    segments, _ = model.transcribe(wav, language="en", vad_filter=True)
+                    with open(srt_out, "w") as f:
+                        for idx, seg in enumerate(segments, 1):
+                            start, end, text = seg.start, seg.end, seg.text.strip()
+                            if text:
+                                f.write(f"{idx}\n")
+                                f.write(f"{int(start//3600):02d}:{int((start%3600)//60):02d}:{int(start%60):02d},000 --> {int(end//3600):02d}:{int((end%3600)//60):02d}:{int(end%60):02d},000\n")
+                                f.write(f"{text}\n\n")
+                    log(f"   tts_{padded}.srt created (faster-whisper)")
+                except Exception as e:
+                    log_error(f"   SRT failed for tts_{padded}: {e}")
         else:
             log(f"   tts_{padded}.srt exists, skipping")
 
