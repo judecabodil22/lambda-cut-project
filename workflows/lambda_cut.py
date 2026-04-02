@@ -52,6 +52,76 @@ LISTENER_RUNNING = True  # set False to stop listener
 PID_FILE = "/tmp/lambda_cut_listener.pid"
 OFFSET_FILE = "/tmp/lambda_cut_listener_offset"
 
+# Round-robin state for script generation (initialized per pipeline run)
+_rr_variants = []
+_rr_perspectives = []
+_rr_voices = []
+_rr_styles = []
+_rr_script_index = 0
+_rr_tts_index = 0
+
+def _init_round_robin(num_scripts):
+    """Initialize round-robin lists - shuffled once per pipeline run."""
+    global _rr_variants, _rr_perspectives, _rr_voices, _rr_styles, _rr_script_index, _rr_tts_index
+    import random
+    
+    # Get all options
+    all_variants = list(SCRIPT_VARIANTS.keys())
+    all_perspectives = list(SCRIPT_PERSPECTIVES)
+    all_voices = [
+        "Vindemiatrix", "Aoede", "Callirrhoe", "Gacrux", "Sulafat", "Leda",
+        "Kore", "Enceladus", "Erinome", "Despina", "Alnilam", "Laomedeia",
+        "Achernar", "Pulcherrima", "Zephyr", "Puck", "Charon", "Fenrir",
+        "Orus", "Iapetus", "Umbriel", "Algieba", "Rasalgethi", "Schedar",
+        "Sadachbia", "Sadaltager", "Achird", "Zubenelgenubi", "Algenib", "Autonoe"
+    ]
+    all_styles = list(TTS_STYLE_OPTIONS)
+    
+    # Shuffle once at start
+    random.shuffle(all_variants)
+    random.shuffle(all_perspectives)
+    random.shuffle(all_voices)
+    random.shuffle(all_styles)
+    
+    # Extend to cover all scripts (cycle through if more scripts than options)
+    _rr_variants = (all_variants * ((num_scripts // len(all_variants)) + 2))[:num_scripts]
+    _rr_perspectives = (all_perspectives * ((num_scripts // len(all_perspectives)) + 2))[:num_scripts]
+    _rr_voices = (all_voices * ((num_scripts // len(all_voices)) + 2))[:num_scripts]
+    _rr_styles = (all_styles * ((num_scripts // len(all_styles)) + 2))[:num_scripts]
+    _rr_script_index = 0
+    _rr_tts_index = 0
+    
+    print(f"Round-robin initialized: {len(_rr_variants)} variants, {len(_rr_perspectives)} perspectives")
+
+def _get_next_round_robin():
+    """Get next round-robin item and advance index."""
+    global _rr_script_index
+    if not _rr_variants:
+        return random.choice(list(SCRIPT_VARIANTS.keys())), random.choice(SCRIPT_PERSPECTIVES)
+    
+    variant = _rr_variants[_rr_script_index] if _rr_script_index < len(_rr_variants) else random.choice(list(SCRIPT_VARIANTS.keys()))
+    perspective = _rr_perspectives[_rr_script_index] if _rr_script_index < len(_rr_perspectives) else random.choice(SCRIPT_PERSPECTIVES)
+    _rr_script_index += 1
+    return variant, perspective
+
+def _get_next_voice_style():
+    """Get next round-robin voice and style (separate from script round-robin)."""
+    global _rr_tts_index
+    if not _rr_voices:
+        all_voices = [
+            "Vindemiatrix", "Aoede", "Callirrhoe", "Gacrux", "Sulafat", "Leda",
+            "Kore", "Enceladus", "Erinome", "Despina", "Alnilam", "Laomedeia",
+            "Achernar", "Pulcherrima", "Zephyr", "Puck", "Charon", "Fenrir",
+            "Orus", "Iapetus", "Umbriel", "Algieba", "Rasalgethi", "Schedar",
+            "Sadachbia", "Sadaltager", "Achird", "Zubenelgenubi", "Algenib", "Autonoe"
+        ]
+        return random.choice(all_voices), random.choice(TTS_STYLE_OPTIONS)
+    
+    voice = _rr_voices[_rr_tts_index] if _rr_tts_index < len(_rr_voices) else random.choice(_rr_voices)
+    style = _rr_styles[_rr_tts_index] if _rr_tts_index < len(_rr_styles) else random.choice(_rr_styles)
+    _rr_tts_index += 1
+    return voice, style
+
 # ─── Environment ──────────────────────────────────────────────────────────────
 def load_env():
     env = {}
@@ -481,8 +551,7 @@ def _gemini_script(text, script_num, keys_file):
     if not keys:
         raise RuntimeError("No API keys in keychain or gemini_keys.txt")
 
-    variant_key = random.choice(list(SCRIPT_VARIANTS.keys()))
-    perspective = random.choice(SCRIPT_PERSPECTIVES)
+    variant_key, perspective = _get_next_round_robin()
     game_title = env("GAME_TITLE", "")
     prompt = _build_script_prompt(variant_key, perspective, game_title).format(transcript=text[:3000])
     log(f"   Variant: {SCRIPT_VARIANTS[variant_key]['style']}, Perspective: {perspective[:50]}...")
@@ -540,6 +609,8 @@ def phase_scripts(json_file, duration, num_hours):
         set_status("Phase 3 FAILED")
         raise RuntimeError("gemini_keys.txt not found")
 
+    _init_round_robin(num_hours)
+    
     set_status("Phase 3: Generating scripts...")
     log("Phase 3: Generating scripts (one per hour)...")
     notify(f"Phase 3 Started: Generating {num_hours} scripts...")
@@ -806,6 +877,11 @@ def phase_tts(duration, num_hours):
         set_status("Phase 5 FAILED")
         raise RuntimeError("GEMINI_API_KEY not configured")
 
+    # Initialize round-robin for TTS voices and styles (shuffled once per run)
+    # Already initialized in phase_scripts, just ensure it's ready
+    if not _rr_voices:
+        _init_round_robin(num_hours)
+    
     set_status("Phase 5: Generating TTS...")
     log("Phase 5: Generating TTS...")
     notify("Phase 5 Started: Generating TTS...")
@@ -833,7 +909,12 @@ def phase_tts(duration, num_hours):
 
                 pcm = os.path.join(TTS_DIR, f"tts_{padded}.pcm")
                 tts_text = _strip_title(txt)
-                _tts_api(tts_text, pcm, voice, style)
+                
+                # Use round-robin voice and style
+                rr_voice, rr_style = _get_next_voice_style()
+                log(f"   Using voice: {rr_voice}, style: {rr_style[:40]}...")
+                
+                _tts_api(tts_text, pcm, rr_voice, rr_style)
 
                 if not os.path.exists(pcm):
                     log_error(f"   TTS API call failed for script {i}")
