@@ -885,7 +885,6 @@ def phase_tts(duration, num_hours):
     set_status("Phase 5: Generating TTS...")
     log("Phase 5: Generating TTS...")
     notify("Phase 5 Started: Generating TTS...")
-    style = env("TTS_STYLE", "")
     delay = int(env("TTS_DELAY", "120"))
 
     tts_generated = 0
