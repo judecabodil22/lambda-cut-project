@@ -4,6 +4,53 @@ All notable changes to this project documented here.
 
 ## [Unreleased]
 
+---
+
+## 3.1.0 — 2026-04-02
+
+### New Features
+
+| Change | Details |
+|--------|---------|
+| Telegram Inline Menu | `/menu` command shows interactive button-based menu |
+| Rich Status Cards | Shows file counts, config settings, pipeline status with emoji |
+| Interactive Config | Tap buttons to set voice, index, style, game (no commands needed) |
+| File Browser | View generated files by category (scripts, clips, TTS) |
+| Help Menu | Commands, Phases, Voices reference via inline menu |
+| 30 Voices | All 30 Gemini TTS voices selectable from menu |
+| 10 Styles | Narrative, Exciting, Mysterious, Funny, etc. |
+| 10 Games | Popular games pre-configured (Life is Strange, Spider-Man, etc.) |
+| Playlist Index | Quick select 1-10 from menu |
+| Cleanup | One-tap cleanup of all generated files |
+
+### Improvements
+
+| Change | Details |
+|--------|---------|
+| Menu Navigation | Back buttons on all sub-menus |
+| Visual Feedback | ✓ shows current selection in menus |
+| Error Handling | Better callback errors - shows text even with None response |
+| Config Display | Shows current values for voice, index, style, game |
+| File Counts | Shows file counts in file browser menu |
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Config buttons | Fixed "Unknown action" for index, style, game buttons |
+| Menu display | Fixed config sub-menu not showing (was missing response_text) |
+| Help button | Fixed help showing nothing |
+
+### New Commands
+
+| Command | Description |
+|---------|-------------|
+| `/menu` | Show interactive inline menu |
+
+---
+
+## 3.0.1 — 2026-04-02
+
 ### New Features
 
 | Change | Details |

@@ -186,20 +186,317 @@ def tg_send(msg, parse_mode=None):
                                       data=data, method="POST")
         urllib.request.urlopen(req, timeout=10)
     except urllib.error.HTTPError as e:
-        # Capture response body for better debugging
-        try:
-            body = e.read().decode()
-        except:
-            body = "No response body"
-        log_error(f"Telegram: {e.code} {e.reason} - {body[:200]}")
+        print(f"Telegram send error: {e}")
+
+def tg_send_menu(msg, reply_markup=None):
+    token = env("TELEGRAM_BOT_TOKEN")
+    chat  = env("TELEGRAM_CHAT_ID")
+    if not token or not chat:
+        return
+    try:
+        params = {"chat_id": chat, "text": msg}
+        if reply_markup:
+            params["reply_markup"] = json.dumps(reply_markup)
+        data = urllib.parse.urlencode(params).encode()
+        req  = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage",
+                                      data=data, method="POST")
+        urllib.request.urlopen(req, timeout=10)
     except Exception as e:
-        log_error(f"Telegram: {e}")
+        print(f"Menu send error: {e}")
+
+def tg_answer_callback(callback_id, text=None):
+    token = env("TELEGRAM_BOT_TOKEN")
+    if not token:
+        return
+    try:
+        params = {"callback_query_id": callback_id}
+        if text:
+            params["text"] = text
+        data = urllib.parse.urlencode(params).encode()
+        req = urllib.request.Request(f"https://api.telegram.org/bot{token}/answerCallbackQuery",
+                                    data=data, method="POST")
+        urllib.request.urlopen(req, timeout=10)
+    except Exception as e:
+        print(f"Callback answer error: {e}")
+        if isinstance(e, urllib.error.HTTPError):
+            try:
+                body = e.read().decode()
+            except:
+                body = "No response body"
+            log_error(f"Telegram callback: {e.code} {e.reason} - {body[:200]}")
 
 def notify(msg):
     if STREAMING:
         tg_send(msg)
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
+# ─── Inline Menu Functions ───────────────────────────────────────────────────
+def get_main_menu():
+    return {
+        "inline_keyboard": [
+            [{"text": "📊 Status", "callback_data": "menu_status"}, {"text": "▶️ Run Pipeline", "callback_data": "menu_pipeline"}],
+            [{"text": "📝 Scripts", "callback_data": "menu_scripts"}, {"text": "🎬 Clips", "callback_data": "menu_clips"}],
+            [{"text": "🎤 TTS", "callback_data": "menu_tts"}, {"text": "🔄 Restart", "callback_data": "menu_restart"}],
+            [{"text": "⚙️ Config", "callback_data": "menu_config"}, {"text": "📋 Help", "callback_data": "menu_help"}],
+            [{"text": "🔍 Update", "callback_data": "menu_update"}, {"text": "🛑 Stop", "callback_data": "menu_stop"}]
+        ]
+    }
+
+def get_run_menu():
+    return {
+        "inline_keyboard": [
+            [{"text": "📥 Full Pipeline", "callback_data": "run_full"}, {"text": "📥 Download", "callback_data": "run_phase1"}],
+            [{"text": "📝 Scripts", "callback_data": "run_phase3"}, {"text": "🎬 Clips", "callback_data": "run_phase4"}],
+            [{"text": "🎤 TTS", "callback_data": "run_phase5"}, {"text": "⬅️ Back", "callback_data": "menu_back"}]
+        ]
+    }
+
+def get_config_menu():
+    return {
+        "inline_keyboard": [
+            [{"text": "🎤 Voice", "callback_data": "config_voice"}, {"text": "📝 Index", "callback_data": "config_index"}],
+            [{"text": "🎵 Style", "callback_data": "config_style"}, {"text": "🎮 Game", "callback_data": "config_game"}],
+            [{"text": "📁 Source", "callback_data": "config_source"}, {"text": "📂 Files", "callback_data": "files_browse"}],
+            [{"text": "⬅️ Back", "callback_data": "menu_back"}]
+        ]
+    }
+
+def get_help_menu():
+    return {
+        "inline_keyboard": [
+            [{"text": "📖 Commands", "callback_data": "help_commands"}, {"text": "💬 Phases", "callback_data": "help_phases"}],
+            [{"text": "🎤 Voices", "callback_data": "help_voices"}, {"text": "⬅️ Back", "callback_data": "menu_back"}]
+        ]
+    }
+
+def get_voice_menu():
+    voices = ["Vindemiatrix", "Aoede", "Callirrhoe", "Gacrux", "Sulafat", "Leda",
+              "Kore", "Enceladus", "Erinome", "Despina", "Alnilam", "Laomedeia",
+              "Achernar", "Pulcherrima", "Zephyr", "Puck", "Charon", "Fenrir",
+              "Orus", "Iapetus", "Umbriel", "Algieba", "Rasalgethi", "Schedar",
+              "Sadachbia", "Sadaltager", "Achird", "Zubenelgenubi", "Algenib", "Autonoe"]
+    current = env("TTS_VOICE", "")
+    keyboard = []
+    for i in range(0, len(voices), 3):
+        row = []
+        for v in voices[i:i+3]:
+            mark = "✓" if v == current else ""
+            row.append({"text": f"{v} {mark}".strip(), "callback_data": f"set_voice_{v}"})
+        keyboard.append(row)
+    keyboard.append([{"text": "⬅️ Back", "callback_data": "menu_config"}])
+    return {"inline_keyboard": keyboard}
+
+def get_index_menu():
+    keyboard = [
+        [{"text": "1", "callback_data": "set_index_1"}, {"text": "2", "callback_data": "set_index_2"}, {"text": "3", "callback_data": "set_index_3"}, {"text": "4", "callback_data": "set_index_4"}, {"text": "5", "callback_data": "set_index_5"}],
+        [{"text": "6", "callback_data": "set_index_6"}, {"text": "7", "callback_data": "set_index_7"}, {"text": "8", "callback_data": "set_index_8"}, {"text": "9", "callback_data": "set_index_9"}, {"text": "10", "callback_data": "set_index_10"}],
+        [{"text": "⬅️ Back", "callback_data": "menu_config"}]
+    ]
+    return {"inline_keyboard": keyboard}
+
+def get_style_menu():
+    styles = ["Default", "Narrative", "Exciting", "Mysterious", "Funny", "Emotional", "Action", "Horror", "Romance", "Documentary"]
+    current = env("TTS_STYLE", "")
+    keyboard = []
+    for i in range(0, len(styles), 2):
+        row = []
+        for s in styles[i:i+2]:
+            mark = "✓" if s == current else ""
+            row.append({"text": f"{s} {mark}".strip(), "callback_data": f"set_style_{s}"})
+        keyboard.append(row)
+    keyboard.append([{"text": "⬅️ Back", "callback_data": "menu_config"}])
+    return {"inline_keyboard": keyboard}
+
+def get_game_menu():
+    games = ["Life is Strange", "Before the Storm", "True Colors", "Double Exposure", "Spider-Man", "God of War", "Hogwarts Legacy", "The Last of Us"]
+    current = env("GAME_TITLE", "")
+    keyboard = []
+    for i in range(0, len(games), 2):
+        row = []
+        for g in games[i:i+2]:
+            mark = "✓" if g == current else ""
+            row.append({"text": f"{g} {mark}".strip(), "callback_data": f"set_game_{g}"})
+        keyboard.append(row)
+    keyboard.append([{"text": "🗑️ Clear", "callback_data": "set_game__clear"}])
+    keyboard.append([{"text": "⬅️ Back", "callback_data": "menu_config"}])
+    return {"inline_keyboard": keyboard}
+
+def get_files_menu():
+    sc = count_files(os.path.join(SCRIPTS_DIR, "*.txt"))
+    cc = count_files(os.path.join(SHORTS_DIR, "*.mp4"))
+    wc = count_files(os.path.join(TTS_DIR, "*.wav"))
+    return {
+        "inline_keyboard": [
+            [{"text": f"📝 Scripts ({sc})", "callback_data": "files_scripts"}, {"text": f"🎬 Clips ({cc})", "callback_data": "files_clips"}],
+            [{"text": f"🎤 TTS ({wc})", "callback_data": "files_tts"}],
+            [{"text": "🧹 Cleanup All", "callback_data": "cleanup_files"}, {"text": "⬅️ Back", "callback_data": "menu_config"}]
+        ]
+    }
+
+def handle_menu_callback(callback_data):
+    """Handle menu button callbacks."""
+    if callback_data == "menu_status":
+        return _get_rich_status()
+    elif callback_data == "menu_pipeline":
+        return None, get_run_menu()
+    elif callback_data == "menu_scripts":
+        return "📝 Running Phase 3...", "run_phase 3"
+    elif callback_data == "menu_clips":
+        return "🎬 Running Phase 4...", "run_phase 4"
+    elif callback_data == "menu_tts":
+        return "🎤 Running Phase 5...", "run_phase 5"
+    elif callback_data == "menu_restart":
+        return "🔄 Restarting listener...", "restart_listener"
+    elif callback_data == "menu_config":
+        return None, get_config_menu()
+    elif callback_data == "menu_help":
+        return None, get_help_menu()
+    elif callback_data == "menu_update":
+        script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        update_info = check_for_updates(script_root)
+        if update_info.get("update_available"):
+            remote_ver = update_info.get("remote_version", "Unknown")
+            return f"🔔 Update available: v{remote_ver}\nRun /update to install.", "run_update"
+        return "✅ You have the latest version."
+    elif callback_data == "menu_stop":
+        return "🛑 Stopping pipeline...", "stop_pipeline"
+    elif callback_data == "menu_back":
+        return None, get_main_menu()
+    elif callback_data == "run_full":
+        return "▶️ Running full pipeline...", "run_pipeline"
+    elif callback_data == "run_phase1":
+        return "📥 Running Phase 1...", "run_phase 1"
+    elif callback_data == "run_phase3":
+        return "📝 Running Phase 3...", "run_phase 3"
+    elif callback_data == "run_phase4":
+        return "🎬 Running Phase 4...", "run_phase 4"
+    elif callback_data == "run_phase5":
+        return "🎤 Running Phase 5...", "run_phase 5"
+    elif callback_data == "config_voice":
+        return None, get_voice_menu()
+    elif callback_data == "config_index":
+        return None, get_index_menu()
+    elif callback_data == "config_style":
+        return None, get_style_menu()
+    elif callback_data == "config_game":
+        return None, get_game_menu()
+    elif callback_data == "config_source":
+        return "📁 Recording path: " + env("RECORDING_PATH", "~/Videos/Recordings")
+    elif callback_data == "files_browse":
+        return None, get_files_menu()
+    elif callback_data == "files_scripts":
+        return _get_files_list("scripts")
+    elif callback_data == "files_clips":
+        return _get_files_list("clips")
+    elif callback_data == "files_tts":
+        return _get_files_list("tts")
+    elif callback_data == "files_shorts":
+        return _get_files_list("shorts")
+    elif callback_data == "quick_stop":
+        return "🛑 Stopping pipeline...", "stop_pipeline"
+    elif callback_data == "quick_restart":
+        return "🔄 Restarting listener...", "restart_listener"
+    elif callback_data == "quick_status":
+        return _get_rich_status()
+    elif callback_data == "quick_clean":
+        return "🧹 Cleaning up files...", "cleanup_files"
+    elif callback_data == "run_update":
+        return "🔄 Updating Lambda Cut...", "do_update"
+    elif callback_data == "set_voice_":
+        return None, get_voice_menu()
+    elif callback_data.startswith("set_voice_"):
+        voice = callback_data.replace("set_voice_", "")
+        update_env_var("TTS_VOICE", voice)
+        return f"✅ Voice set to: {voice}"
+    elif callback_data.startswith("set_index_"):
+        index = callback_data.replace("set_index_", "")
+        update_env_var("PLAYLIST_INDEX", index)
+        return f"✅ Playlist index set to: {index}"
+    elif callback_data.startswith("set_style_"):
+        style = callback_data.replace("set_style_", "")
+        update_env_var("TTS_STYLE", style)
+        return f"✅ Style set to: {style}"
+    elif callback_data.startswith("set_game_"):
+        game = callback_data.replace("set_game_", "")
+        if game == "_clear":
+            update_env_var("GAME_TITLE", "")
+            return "✅ Game title cleared"
+        update_env_var("GAME_TITLE", game)
+        return f"✅ Game set to: {game}"
+    elif callback_data == "cleanup_files":
+        count = cleanup_all_files()
+        return f"🧹 Cleaned up {count} file(s)"
+    elif callback_data == "do_update":
+        return _do_update_menu()
+    else:
+        return "Unknown action"
+
+
+def _get_rich_status():
+    """Get rich status card with file counts and pipeline info."""
+    script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    local_ver = get_local_version(script_root)
+    
+    # File counts
+    sc = count_files(os.path.join(SCRIPTS_DIR, "*.txt"))
+    cc = count_files(os.path.join(SHORTS_DIR, "*.mp4"))
+    wc = count_files(os.path.join(TTS_DIR, "*.wav"))
+    tc = count_files(os.path.join(TRANSCRIPTS_DIR, "*.json"))
+    
+    # Pipeline status
+    s = open(STATUS_FILE).read() if os.path.exists(STATUS_FILE) else ""
+    if PIPELINE_RUNNING:
+        status_line = f"🔄 Running: {s}"
+    elif s:
+        status_line = f"💤 Idle — Last: {s}"
+    else:
+        status_line = "💤 Idle"
+    
+    # Voice and style
+    voice = env("TTS_VOICE", "Not set")
+    style = env("TTS_STYLE", "Default")
+    game = env("GAME_TITLE", "Not set")
+    
+    status = f"""📊 Lambda Cut Status — v{local_ver}
+
+🔹 Pipeline: {status_line}
+
+📁 Files:
+  📝 Scripts: {sc}
+  🎬 Clips: {cc}
+  🎤 TTS: {wc}
+  📄 Transcripts: {tc}
+
+⚙️ Config:
+  🎤 Voice: {voice}
+  🎵 Style: {style[:20]}...
+  🎮 Game: {game}"""
+    return status
+
+
+def _get_files_list(folder):
+    """Get list of files in a folder."""
+    folder_map = {"scripts": SCRIPTS_DIR, "clips": SHORTS_DIR, "tts": TTS_DIR, "shorts": SHORTS_DIR}
+    dir_path = folder_map.get(folder)
+    if not dir_path:
+        return "Unknown folder"
+    
+    files = sorted(glob.glob(os.path.join(dir_path, "*")), key=os.path.getmtime, reverse=True)[:10]
+    if not files:
+        return f"No files in {folder}"
+    
+    names = [os.path.basename(f) for f in files]
+    return f"📁 {folder.capitalize()} ({len(names)} total):\n" + "\n".join(f"• {n[:40]}" for n in names)
+
+
+def _do_update_menu():
+    """Perform update and return result."""
+    script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    result = perform_update(script_root)
+    if result.get("success"):
+        return f"✅ Updated to v{result.get('version', 'unknown')}. Restart listener to apply."
+    return f"❌ Update failed: {result.get('error', 'Unknown error')}"
+
+# ─── Helpers ───────────────────────────────────────────────────────────────────
 def update_env_var(key, value):
     lines = []
     found = False
@@ -1436,7 +1733,12 @@ Commands:
 /cleanup         - Delete all generated files
 /clean_backups  - Clean old backup versions
 
+/menu      - Show interactive inline menu
 /help - This message""")
+
+    elif cmd == "/menu":
+        main_menu = get_main_menu()
+        tg_send_menu("📋 Lambda Cut Menu — Select an action:", main_menu)
 
     elif cmd in ("/restart_listener", "/restart"):
         tg_send("Restarting listener via systemd...")
@@ -1643,6 +1945,111 @@ WantedBy=default.target
                 offset = upd["update_id"] + 1
                 with open(OFFSET_FILE, "w") as f:
                     f.write(str(offset))
+                
+                # Handle callback_query (menu button clicks)
+                cb = upd.get("callback_query", {})
+                if cb:
+                    cb_id = cb.get("id", "")
+                    cb_data = cb.get("data", "")
+                    cb_msg = cb.get("message", {})
+                    cb_chat = str(cb_msg.get("chat", {}).get("id", ""))
+                    
+                    if cb_chat == str(chat) and cb_data:
+                        print(f"Callback: {cb_data}")
+                        result = handle_menu_callback(cb_data)
+                        
+                        if result:
+                            if isinstance(result, tuple):
+                                response_text, action_or_markup = result
+                            else:
+                                response_text = result
+                                action_or_markup = None
+                            
+                            # Answer the callback to dismiss loading spinner
+                            if response_text:
+                                tg_answer_callback(cb_id, response_text[:200])
+                            
+                            # If there's a keyboard markup to show, update the message
+                            if isinstance(action_or_markup, dict):
+                                token = env("TELEGRAM_BOT_TOKEN")
+                                if token:
+                                    msg_id = cb_msg.get("message_id", "")
+                                    try:
+                                        text = response_text if response_text else "📋 Select option:"
+                                        params = {"chat_id": cb_chat, "message_id": msg_id, "text": text, "reply_markup": json.dumps(action_or_markup)}
+                                        data = urllib.parse.urlencode(params).encode()
+                                        req = urllib.request.Request(f"https://api.telegram.org/bot{token}/editMessageText", data=data, method="POST")
+                                        urllib.request.urlopen(req, timeout=10)
+                                    except Exception as e:
+                                        print(f"Menu update error: {e}")
+                            elif action_or_markup == "run_pipeline":
+                                tg_send("▶️ Running full pipeline...")
+                                def _run():
+                                    global PIPELINE_RUNNING
+                                    PIPELINE_RUNNING = True
+                                    try:
+                                        run_pipeline()
+                                    except Exception as e:
+                                        tg_send(f"Pipeline error: {e}")
+                                    finally:
+                                        PIPELINE_RUNNING = False
+                                threading.Thread(target=_run, daemon=True).start()
+                            elif action_or_markup == "restart_listener":
+                                tg_answer_callback(cb_id, "Restarting...")
+                                tg_send("Restarting listener via systemd...")
+                                subprocess.run(["systemctl", "--user", "restart", "lambda-cut-listener.service"], capture_output=True)
+                            elif action_or_markup == "stop_pipeline":
+                                global PIPELINE_STOP_REQUESTED
+                                PIPELINE_STOP_REQUESTED = True
+                                tg_answer_callback(cb_id, "Pipeline stop requested")
+                                tg_send("Pipeline stop requested. Finishing current phase...")
+                            elif action_or_markup == "run_phase 1":
+                                tg_answer_callback(cb_id, "Running Phase 1...")
+                                def _run_p1():
+                                    global PIPELINE_RUNNING; PIPELINE_RUNNING = True
+                                    try: run_pipeline(phases=[1])
+                                    except Exception as e: tg_send(f"Phase 1 error: {e}")
+                                    finally: PIPELINE_RUNNING = False
+                                threading.Thread(target=_run_p1, daemon=True).start()
+                            elif action_or_markup == "run_phase 3":
+                                tg_answer_callback(cb_id, "Running Phase 3...")
+                                def _run_p3():
+                                    global PIPELINE_RUNNING; PIPELINE_RUNNING = True
+                                    try: run_pipeline(phases=[3])
+                                    except Exception as e: tg_send(f"Phase 3 error: {e}")
+                                    finally: PIPELINE_RUNNING = False
+                                threading.Thread(target=_run_p3, daemon=True).start()
+                            elif action_or_markup == "run_phase 4":
+                                tg_answer_callback(cb_id, "Running Phase 4...")
+                                def _run_p4():
+                                    global PIPELINE_RUNNING; PIPELINE_RUNNING = True
+                                    try: run_pipeline(phases=[4])
+                                    except Exception as e: tg_send(f"Phase 4 error: {e}")
+                                    finally: PIPELINE_RUNNING = False
+                                threading.Thread(target=_run_p4, daemon=True).start()
+                            elif action_or_markup == "run_phase 5":
+                                tg_answer_callback(cb_id, "Running Phase 5...")
+                                def _run_p5():
+                                    global PIPELINE_RUNNING; PIPELINE_RUNNING = True
+                                    try: run_pipeline(phases=[5])
+                                    except Exception as e: tg_send(f"Phase 5 error: {e}")
+                                    finally: PIPELINE_RUNNING = False
+                                threading.Thread(target=_run_p5, daemon=True).start()
+                            elif isinstance(action_or_markup, dict):
+                                # It's a new keyboard markup - edit the message
+                                token = env("TELEGRAM_BOT_TOKEN")
+                                if token and response_text:
+                                    msg_id = cb_msg.get("message_id", "")
+                                    try:
+                                        params = {"chat_id": cb_chat, "message_id": msg_id, "text": response_text, "reply_markup": json.dumps(action_or_markup)}
+                                        data = urllib.parse.urlencode(params).encode()
+                                        req = urllib.request.Request(f"https://api.telegram.org/bot{token}/editMessageText", data=data, method="POST")
+                                        urllib.request.urlopen(req, timeout=10)
+                                    except Exception as e:
+                                        print(f"Menu update error: {e}")
+                        continue
+                
+                # Handle regular message commands
                 msg = upd.get("message", {})
                 cid = str(msg.get("chat", {}).get("id", ""))
                 txt = msg.get("text", "")
