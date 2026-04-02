@@ -6,6 +6,16 @@ All notable changes to this project documented here.
 
 ---
 
+## 3.1.1 — 2026-04-02
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Restart button | Fixed restart button not working - now properly exits and restarts service |
+
+---
+
 ## 3.1.0 — 2026-04-02
 
 ### New Features

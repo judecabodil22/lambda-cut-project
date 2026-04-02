@@ -345,7 +345,7 @@ def handle_menu_callback(callback_data):
     elif callback_data == "menu_tts":
         return "🎤 Running Phase 5...", "run_phase 5"
     elif callback_data == "menu_restart":
-        return "🔄 Restarting listener...", "restart_listener"
+        return "🔄 Restarting listener...", "do_restart"
     elif callback_data == "menu_config":
         return None, get_config_menu()
     elif callback_data == "menu_help":
@@ -394,7 +394,7 @@ def handle_menu_callback(callback_data):
     elif callback_data == "quick_stop":
         return "🛑 Stopping pipeline...", "stop_pipeline"
     elif callback_data == "quick_restart":
-        return "🔄 Restarting listener...", "restart_listener"
+        return "🔄 Restarting listener...", "do_restart"
     elif callback_data == "quick_status":
         return _get_rich_status()
     elif callback_data == "quick_clean":
@@ -1998,6 +1998,10 @@ WantedBy=default.target
                                 tg_answer_callback(cb_id, "Restarting...")
                                 tg_send("Restarting listener via systemd...")
                                 subprocess.run(["systemctl", "--user", "restart", "lambda-cut-listener.service"], capture_output=True)
+                            elif action_or_markup == "do_restart":
+                                tg_answer_callback(cb_id, "🔄 Restarting...")
+                                subprocess.run(["systemctl", "--user", "restart", "lambda-cut-listener.service"], capture_output=True)
+                                sys.exit(0)
                             elif action_or_markup == "stop_pipeline":
                                 global PIPELINE_STOP_REQUESTED
                                 PIPELINE_STOP_REQUESTED = True
