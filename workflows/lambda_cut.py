@@ -44,6 +44,13 @@ TTS_DIR          = os.path.join(WORKSPACE, "tts")
 SHORTS_DIR       = os.path.join(WORKSPACE, "shorts")
 OUTPUT_DIR       = os.path.join(WORKSPACE, "output")
 
+# Content Studio directories
+CONTENT_STUDIO_DIR = os.path.join(WORKSPACE, "content_studio")
+CS_TRANSCRIPTS_DIR = os.path.join(CONTENT_STUDIO_DIR, "transcripts")
+CS_SHORTS_DIR      = os.path.join(CONTENT_STUDIO_DIR, "shorts")
+CS_SCRIPTS_DIR     = os.path.join(CONTENT_STUDIO_DIR, "scripts")
+CS_TTS_DIR         = os.path.join(CONTENT_STUDIO_DIR, "tts")
+
 STREAMING = False  # set True when called from listener
 PIPELINE_RUNNING = False
 LISTENER_RESTART = False  # set True when update requires restart
@@ -236,8 +243,8 @@ def get_main_menu():
             [{"text": "📊 Status", "callback_data": "menu_status"}, {"text": "▶️ Run Pipeline", "callback_data": "menu_pipeline"}],
             [{"text": "📝 Scripts", "callback_data": "menu_scripts"}, {"text": "🎬 Clips", "callback_data": "menu_clips"}],
             [{"text": "🎤 TTS", "callback_data": "menu_tts"}, {"text": "🔄 Restart", "callback_data": "menu_restart"}],
-            [{"text": "⚙️ Config", "callback_data": "menu_config"}, {"text": "📋 Help", "callback_data": "menu_help"}],
-            [{"text": "🔍 Update", "callback_data": "menu_update"}, {"text": "🛑 Stop", "callback_data": "menu_stop"}]
+            [{"text": "⚙️ Config", "callback_data": "menu_config"}, {"text": "🎨 Content Studio", "callback_data": "menu_content_studio"}],
+            [{"text": "📋 Help", "callback_data": "menu_help"}, {"text": "🛑 Stop", "callback_data": "menu_stop"}]
         ]
     }
 
@@ -332,6 +339,21 @@ def get_files_menu():
         ]
     }
 
+def get_content_studio_menu():
+    tc = count_files(os.path.join(CS_TRANSCRIPTS_DIR, "*.json"))
+    sc = count_files(os.path.join(CS_SHORTS_DIR, "*.mp4"))
+    cc = count_files(os.path.join(CS_SCRIPTS_DIR, "*.txt"))
+    return {
+        "inline_keyboard": [
+            [{"text": "📥 Import Pipeline Data", "callback_data": "cs_import"}],
+            [{"text": "🎬 Generate Script", "callback_data": "cs_generate"}],
+            [{"text": "🎤 Generate TTS", "callback_data": "cs_generate_tts"}],
+            [{"text": "🗑️ Clear All", "callback_data": "cs_clear"}],
+            [{"text": f"📊 {tc} transcripts, {sc} shorts, {cc} scripts", "callback_data": "cs_status"}],
+            [{"text": "⬅️ Back", "callback_data": "menu_back"}]
+        ]
+    }
+
 def handle_menu_callback(callback_data):
     """Handle menu button callbacks."""
     if callback_data == "menu_status":
@@ -350,6 +372,8 @@ def handle_menu_callback(callback_data):
         return None, get_config_menu()
     elif callback_data == "menu_help":
         return None, get_help_menu()
+    elif callback_data == "menu_content_studio":
+        return None, get_content_studio_menu()
     elif callback_data == "menu_update":
         script_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         update_info = check_for_updates(script_root)
@@ -427,6 +451,18 @@ def handle_menu_callback(callback_data):
         return f"🧹 Cleaned up {count} file(s)"
     elif callback_data == "do_update":
         return _do_update_menu()
+    elif callback_data == "cs_import":
+        return "📥 Importing pipeline data...", "cs_do_import"
+    elif callback_data == "cs_generate":
+        return "🎬 Analyzing transcripts...", "cs_do_generate"
+    elif callback_data == "cs_generate_tts":
+        return "🎤 Generating TTS...", "cs_do_generate_tts"
+    elif callback_data == "cs_clear":
+        return "🗑️ Clearing Content Studio...", "cs_do_clear"
+    elif callback_data == "cs_status":
+        tc = count_files(os.path.join(CS_TRANSCRIPTS_DIR, "*.json"))
+        sc = count_files(os.path.join(CS_SHORTS_DIR, "*.mp4"))
+        return f"📊 Content Studio:\n📝 Transcripts: {tc}\n🎬 Shorts: {sc}"
     else:
         return "Unknown action"
 
@@ -486,6 +522,453 @@ def _get_files_list(folder):
     
     names = [os.path.basename(f) for f in files]
     return f"📁 {folder.capitalize()} ({len(names)} total):\n" + "\n".join(f"• {n[:40]}" for n in names)
+
+
+# ─── Content Studio Functions ─────────────────────────────────────────────────
+def _cs_import_data():
+    """Import transcripts and shorts from pipeline to Content Studio."""
+    # Ensure directories exist
+    for d in (CONTENT_STUDIO_DIR, CS_TRANSCRIPTS_DIR, CS_SHORTS_DIR):
+        os.makedirs(d, exist_ok=True)
+    
+    # Import transcripts
+    transcript_count = 0
+    for f in glob.glob(os.path.join(TRANSCRIPTS_DIR, "*.json")):
+        dst = os.path.join(CS_TRANSCRIPTS_DIR, os.path.basename(f))
+        if not os.path.exists(dst):
+            shutil.move(f, dst)
+            transcript_count += 1
+    
+    # Import shorts
+    short_count = 0
+    for f in glob.glob(os.path.join(SHORTS_DIR, "*.mp4")):
+        dst = os.path.join(CS_SHORTS_DIR, os.path.basename(f))
+        if not os.path.exists(dst):
+            shutil.move(f, dst)
+            short_count += 1
+    
+    return transcript_count, short_count
+
+
+def _cs_clear_data():
+    """Clear all files from Content Studio."""
+    count = 0
+    for d in (CS_TRANSCRIPTS_DIR, CS_SHORTS_DIR, CS_SCRIPTS_DIR, CS_TTS_DIR):
+        if os.path.exists(d):
+            for f in glob.glob(os.path.join(d, "*")):
+                try:
+                    os.remove(f)
+                    count += 1
+                except OSError:
+                    pass
+    return count
+
+
+def _cs_find_all_transcripts():
+    """Find all transcripts in Content Studio."""
+    return sorted(glob.glob(os.path.join(CS_TRANSCRIPTS_DIR, "*.json")), key=os.path.getmtime)
+
+
+def _cs_read_all_transcripts():
+    """Read all transcripts and combine text."""
+    transcripts = _cs_find_all_transcripts()
+    if not transcripts:
+        return None
+    
+    all_text = ""
+    for path in transcripts:
+        try:
+            with open(path) as f:
+                data = json.load(f)
+                for seg in data.get("segments", []):
+                    text = re.sub(r"<[^>]*>", "", seg.get("text", ""))
+                    if text.strip():
+                        all_text += text + " "
+        except Exception as e:
+            log(f"Error reading {path}: {e}")
+    
+    # Limit to first 50000 chars to stay safe within context
+    return all_text if all_text else None
+
+
+def _cs_analyze_transcript(transcript_text):
+    """Analyze transcript and determine best content type, subject, and angle."""
+    keys = get_gemini_keys()
+    if not keys and os.path.exists(KEYS_FILE):
+        with open(KEYS_FILE) as f:
+            keys = [l.strip() for l in f if l.strip()]
+    if not keys:
+        raise RuntimeError("No API keys available")
+    
+    # Get game title for context
+    game_title = env("GAME_TITLE", "")
+    
+    prompt = f"""Analyze these transcripts from the game "{game_title}" and identify the MOST SIGNIFICANT story elements.
+
+IMPORTANT PRIORITIES (in order):
+1. Character deaths, major plot twists, emotional moments
+2. Key character relationships and conflicts
+3. Theme/lesson of the story
+4. Then minor details
+
+From these, determine:
+1. CONTENT_TYPE: What content would be most engaging?
+   - Theory (for predictions/speculation)
+   - Analysis (for character deep-dive)
+   - Review (for opinions/rankings)
+   - Mystery (for hidden details/plot twists)
+   - Lore (for world-building)
+2. SUBJECT: Who or what is the main focus? (be specific: "Safi" not "characters")
+3. ANGLE: What specific aspect would captivate viewers? (prioritize major moments)
+4. VOICE_STYLE: Match to content type
+5. REAL_CHARACTERS: List ONLY the character names that actually appear in the transcript (no made up names)
+6. KEY_PLOT_POINTS: List 3-5 specific plot points, events, or story beats that are actually mentioned in the transcript. Be specific: "Safi was murdered", "Max investigating Safi's death", etc.
+
+Respond in this exact format:
+CONTENT_TYPE: [type]
+SUBJECT: [subject - be specific]
+ANGLE: [specific moment or detail - focus on major story beats]
+VOICE_STYLE: [style]
+REAL_CHARACTERS: [comma-separated list of actual character names from transcript]
+KEY_PLOT_POINTS: [semicolon-separated list of specific events mentioned in transcript]
+
+Transcripts:
+{transcript_text}"""
+
+    body = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 512}
+    }).encode()
+    
+    key = keys[0]
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={key}"
+    
+    _rate_limit()
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+    
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            r = json.loads(resp.read())
+            text = r["candidates"][0]["content"]["parts"][0]["text"]
+            
+            # Parse response
+            content_type = "Analysis"
+            subject = "Unknown"
+            angle = "General overview"
+            voice_style = "Documentary"
+            real_characters = []
+            key_plot_points = []
+            
+            for line in text.split("\n"):
+                if line.startswith("CONTENT_TYPE:"):
+                    content_type = line.split(":", 1)[1].strip()
+                elif line.startswith("SUBJECT:"):
+                    subject = line.split(":", 1)[1].strip()
+                elif line.startswith("ANGLE:"):
+                    angle = line.split(":", 1)[1].strip()
+                elif line.startswith("VOICE_STYLE:"):
+                    voice_style = line.split(":", 1)[1].strip()
+                elif line.startswith("REAL_CHARACTERS:"):
+                    chars = line.split(":", 1)[1].strip()
+                    real_characters = [c.strip() for c in chars.split(",") if c.strip()]
+                elif line.startswith("KEY_PLOT_POINTS:"):
+                    points = line.split(":", 1)[1].strip()
+                    key_plot_points = [p.strip() for p in points.split(";") if p.strip()]
+            
+            return content_type, subject, angle, voice_style, real_characters, key_plot_points
+    except Exception as e:
+        log(f"Analysis error: {e}")
+        return "Analysis", "Unknown", "General overview", "Documentary", [], []
+
+
+def _cs_generate_script(transcript_text, content_type, subject, angle, real_characters, key_plot_points):
+    """Generate content script (~1500 words)."""
+    keys = get_gemini_keys()
+    if not keys and os.path.exists(KEYS_FILE):
+        with open(KEYS_FILE) as f:
+            keys = [l.strip() for l in f if l.strip()]
+    if not keys:
+        raise RuntimeError("No API keys available")
+    
+    # Get game title for context
+    game_title = env("GAME_TITLE", "the game")
+    
+    # Build prompt based on content type
+    type_prompts = {
+        "Theory": "Create a 'what if' theory video. Speculate about plot possibilities, character motivations, and future story directions. Make it intriguing and engaging.",
+        "Analysis": "Create a character analysis video. Deep dive into character motivations, psychology, relationships, and character arcs. Be informative and educational.",
+        "Review": "Create an opinion and review video. Share hot takes, rank elements, and give honest opinions about story beats. Be conversational and engaging.",
+        "Mystery": "Create a mystery reveal video. Uncover hidden details, plot twists, and missed details that viewers might have overlooked. Build suspense.",
+        "Lore": "Create a lore and world-building video. Explore game world details, backstory, history, and hidden lore. Be educational and informative."
+    }
+    
+    type_prompt = type_prompts.get(content_type, type_prompts["Analysis"])
+    
+    # Only use real characters, no made up names
+    allowed_chars = ", ".join(real_characters) if real_characters else "ONLY use characters from the transcript - do NOT invent any new character names"
+    
+    # Key plot points for accuracy
+    plot_points_str = "; ".join(key_plot_points) if key_plot_points else "Only use events explicitly mentioned in the transcript"
+    
+    prompt = f"""Create a 1500-word video script about {subject} from {game_title}.
+
+{type_prompt}
+
+Focus on this angle: {angle}
+
+CRITICAL RESTRICTIONS:
+- You MUST only mention these real characters: {allowed_chars}
+- DO NOT invent or mention any character names that are NOT in the above list
+- DO NOT create fictional characters like "Sarah", "Mark", "David", "Alex" unless they appear in the transcript
+- If you need to reference people, use generic terms like "a friend", "a character" or "the victim" instead of made-up names
+- ONLY write about these specific plot points from the transcript: {plot_points_str}
+- DO NOT include any plot details, character abilities, or story elements that are NOT mentioned in the transcript above
+
+The script should:
+- Have a hook at the start to grab attention
+- Be conversational and engaging for a 10-minute video
+- Include natural paragraph flow (NOT bullet points or fragments)
+- Have a clear structure with intro, body, and conclusion
+- End with a call to action asking viewers to like and subscribe
+- Be written in a style suitable for a YouTube video narration
+- Stay FACTUALLY accurate to the transcript - do not make up events or details
+
+Write the complete script now."""
+
+    body = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.8, "maxOutputTokens": 3072}
+    }).encode()
+    
+    # Try each key with retry logic
+    for i in range(len(keys)):
+        key = keys[i % len(keys)]
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={key}"
+        
+        for attempt in range(3):
+            try:
+                _rate_limit()
+                req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    r = json.loads(resp.read())
+                    return r["candidates"][0]["content"]["parts"][0]["text"]
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    wait = (2 ** attempt) * 15
+                    log(f"Key ...{key[-6:]} rate limited (429), waiting {wait}s...")
+                    time.sleep(wait)
+                elif e.code == 503:
+                    wait = (2 ** attempt) * 10
+                    log(f"Key ...{key[-6:]} service unavailable (503), retry {attempt+1}/3 in {wait}s...")
+                    time.sleep(wait)
+                elif e.code == 400:
+                    log(f"Key ...{key[-6:]} bad request (400): {e.read().decode()[:200]}")
+                    break  # Don't retry on 400
+                else:
+                    log(f"HTTP error {e.code} with key ...{key[-6:]}: {e}")
+                    break
+            except Exception as e:
+                log(f"Script generation error with key ...{key[-6:]}: {e}")
+                time.sleep(5)
+                break
+        
+        log(f"Key ...{key[-6:]} failed, trying next...")
+    
+    raise RuntimeError("Script generation failed: All API keys exhausted")
+
+
+def _cs_generate_tts(script, voice_style):
+    """Generate TTS from script (handles 2 segments for 10 min)."""
+    os.makedirs(CS_TTS_DIR, exist_ok=True)
+    
+    # Get voice based on style
+    voices_by_style = {
+        "Mysterious": ["Zephyr", "Charon", "Umbriel"],
+        "Conversational": ["Aoede", "Leda", "Kore"],
+        "Documentary": ["Vindemiatrix", "Gacrux", "Sadachbia"],
+        "Investigative": ["Fenrir", "Orus", "Rasalgethi"],
+        "Educational": ["Alnilam", "Algieba", "Schedar"]
+    }
+    style_voices = voices_by_style.get(voice_style, voices_by_style["Documentary"])
+    voice = style_voices[_rr_tts_index % len(style_voices)]
+    
+    # Split script into 2 segments (~750 words each)
+    words = script.split()
+    mid = len(words) // 2
+    segments = [(" ".join(words[:mid]), "segment1"), (" ".join(words[mid:]), "segment2")]
+    
+    audio_files = []
+    
+    for text_part, name in segments:
+        # Generate TTS
+        voice_id = _get_voice_id(voice)
+        if not voice_id:
+            raise RuntimeError(f"Unknown voice: {voice}")
+        
+        body = json.dumps({
+            "input": {"text": text_part},
+            "voice": {"name": voice_id},
+            "audioConfig": {"speakingRate": 1.0, "pitch": 0}
+        }).encode()
+        
+        keys = get_gemini_keys()
+        if not keys and os.path.exists(KEYS_FILE):
+            with open(KEYS_FILE) as f:
+                keys = [l.strip() for l in f if l.strip()]
+        
+        api_keys = keys if keys else [env("GEMINI_API_KEY")]
+        time.sleep(2)  # Rate limit
+        
+        out_pcm = os.path.join(CS_TTS_DIR, f"{name}.pcm")
+        out_wav = os.path.join(CS_TTS_DIR, f"{name}.wav")
+        
+        tts_success = False
+        for key in api_keys:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key={key}"
+            req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+            
+            try:
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    r = json.loads(resp.read())
+                    audio = r["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
+                    with open(out_pcm, "wb") as f:
+                        f.write(base64.b64decode(audio))
+                    
+                    # Convert PCM to WAV
+                    subprocess.run(["ffmpeg", "-y", "-f", "s16le", "-ar", "24000", "-ac", "1", "-i", out_pcm, "-ar", "24000", "-ac", "1", out_wav], capture_output=True)
+                    os.remove(out_pcm)
+                    audio_files.append(out_wav)
+                    tts_success = True
+                    break
+            except Exception as e:
+                log(f"TTS error with key ...{key[-6:]}: {e}")
+                continue
+        
+        if not tts_success:
+            raise RuntimeError(f"TTS generation failed for segment: {name}")
+    
+    # Check we got all segments
+    if len(audio_files) != len(segments):
+        raise RuntimeError(f"TTS failed: only {len(audio_files)}/{len(segments)} segments generated")
+    
+    # Concatenate audio files
+    final_audio = os.path.join(CS_TTS_DIR, f"content_{int(time.time())}.wav")
+    concat_list = os.path.join(CS_TTS_DIR, "concat_list.txt")
+    with open(concat_list, "w") as f:
+        for af in audio_files:
+            f.write(f"file '{af}'\n")
+    
+    subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_list, "-c", "copy", final_audio], capture_output=True)
+    
+    # Cleanup
+    for af in audio_files:
+        os.remove(af)
+    os.remove(concat_list)
+    
+    return final_audio, voice
+
+
+def _cs_generate_srt(audio_file):
+    """Generate SRT from audio file using faster-whisper."""
+    # Use faster-whisper to generate transcript with timestamps
+    try:
+        from faster_whisper import WhisperModel
+        model = WhisperModel("base", device="cpu", compute_type="int8")
+        segments, info = model.transcribe(audio_file, language="en", word_timestamps=False)
+        
+        srt_file = audio_file.replace(".wav", ".srt")
+        with open(srt_file, "w") as f:
+            for i, seg in enumerate(segments, 1):
+                start = _format_srt_time(seg.start)
+                end = _format_srt_time(seg.end)
+                text = seg.text.strip()
+                f.write(f"{i}\n{start} --> {end}\n{text}\n\n")
+        
+        return srt_file
+    except Exception as e:
+        log(f"SRT generation error: {e}")
+        return None
+
+
+def _format_srt_time(seconds):
+    """Format seconds to SRT time format."""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    millis = int((seconds % 1) * 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
+
+
+def _get_voice_id(voice_name):
+    """Get Gemini TTS voice ID."""
+    voices = {
+        "Aoede": "Aoede", "Callirrhoe": "Callirrhoe", "Gacrux": "Gacrux",
+        "Kore": "Kore", "Leda": "Leda", "Puck": "Puck",
+        "Sao": "Sao", "Zephyr": "Zephyr", "Fenrir": "Fenrir",
+        "Charon": "Charon", "Orus": "Orus", "Umbriel": "Umbriel",
+        "Vindemiatrix": "Vindemiatrix", "Alnilam": "Alnilam", "Schedar": "Schedar",
+        "Sadachbia": "Sadachbia", "Rasalgethi": "Rasalgethi", "Algieba": "Algieba"
+    }
+    return voices.get(voice_name)
+
+
+def _cs_generate_script_only():
+    """Generate script only (no TTS)."""
+    for d in (CS_SCRIPTS_DIR, CS_TTS_DIR):
+        os.makedirs(d, exist_ok=True)
+    
+    transcripts = _cs_find_all_transcripts()
+    if not transcripts:
+        tg_send("❌ No transcripts in Content Studio. Import pipeline data first.")
+        return
+    
+    tg_send("📖 Reading all transcripts...")
+    transcript_text = _cs_read_all_transcripts()
+    if not transcript_text:
+        tg_send("❌ Could not read transcripts.")
+        return
+    
+    tg_send(f"📖 Read {len(transcript_text)} characters from {len(transcripts)} transcript(s)")
+    
+    tg_send("🔍 Analyzing content (this may take a moment)...")
+    content_type, subject, angle, voice_style, real_characters, key_plot_points = _cs_analyze_transcript(transcript_text)
+    tg_send(f"📝 Detected: {content_type}\n👤 Subject: {subject}\n🎤 Voice: {voice_style}\n📋 Characters: {', '.join(real_characters[:5]) if real_characters else 'None'}\n🔑 Plot: {key_plot_points[0] if key_plot_points else 'None'}")
+
+    tg_send("✍️ Generating script (~1500 words)...")
+    try:
+        script = _cs_generate_script(transcript_text, content_type, subject, angle, real_characters, key_plot_points)
+    except Exception as e:
+        tg_send(f"❌ Script generation failed: {e}")
+        return
+    
+    script_file = os.path.join(CS_SCRIPTS_DIR, f"content_{content_type.lower()}_{int(time.time())}.txt")
+    with open(script_file, "w") as f:
+        f.write(script)
+    
+    tg_send(f"✅ Script generated!\n📝 Saved: {os.path.basename(script_file)}")
+
+
+def _cs_generate_tts_only():
+    """Generate TTS from existing scripts."""
+    scripts = sorted(glob.glob(os.path.join(CS_SCRIPTS_DIR, "*.txt")), key=os.path.getmtime, reverse=True)
+    if not scripts:
+        tg_send("❌ No scripts found. Generate a script first.")
+        return
+    
+    latest_script = scripts[0]
+    with open(latest_script) as f:
+        script = f.read()
+    
+    tg_send(f"📄 Found script: {os.path.basename(latest_script)}")
+    tg_send("🎤 Generating TTS audio...")
+    
+    try:
+        audio_file, voice = _cs_generate_tts(script, "Documentary")
+    except Exception as e:
+        tg_send(f"❌ TTS generation failed: {e}")
+        return
+    
+    tg_send(f"✅ TTS generated!\n🎤 Voice: {voice}\n📁 Saved: {os.path.basename(audio_file)}")
 
 
 def _do_update_menu():
@@ -1740,6 +2223,10 @@ Commands:
         main_menu = get_main_menu()
         tg_send_menu("📋 Lambda Cut Menu — Select an action:", main_menu)
 
+    elif cmd in ("/cs", "/content_studio"):
+        cs_menu = get_content_studio_menu()
+        tg_send_menu("🎨 Content Studio — Select an action:", cs_menu)
+
     elif cmd in ("/restart_listener", "/restart"):
         tg_send("Restarting listener via systemd...")
         subprocess.run(["systemctl", "--user", "restart", "lambda-cut-listener.service"], capture_output=True)
@@ -2039,6 +2526,24 @@ WantedBy=default.target
                                     except Exception as e: tg_send(f"Phase 5 error: {e}")
                                     finally: PIPELINE_RUNNING = False
                                 threading.Thread(target=_run_p5, daemon=True).start()
+                            elif action_or_markup == "cs_do_import":
+                                tg_answer_callback(cb_id, "Importing...")
+                                count_t, count_s = _cs_import_data()
+                                tg_send(f"✅ Import complete!\n📝 {count_t} transcripts\n🎬 {count_s} shorts")
+                            elif action_or_markup == "cs_do_generate":
+                                tg_answer_callback(cb_id, "Generating script...")
+                                def _run_cs():
+                                    _cs_generate_script_only()
+                                threading.Thread(target=_run_cs, daemon=True).start()
+                            elif action_or_markup == "cs_do_generate_tts":
+                                tg_answer_callback(cb_id, "Generating TTS...")
+                                def _run_tts():
+                                    _cs_generate_tts_only()
+                                threading.Thread(target=_run_tts, daemon=True).start()
+                            elif action_or_markup == "cs_do_clear":
+                                tg_answer_callback(cb_id, "Clearing...")
+                                count = _cs_clear_data()
+                                tg_send(f"🗑️ Cleared {count} files from Content Studio")
                             elif isinstance(action_or_markup, dict):
                                 # It's a new keyboard markup - edit the message
                                 token = env("TELEGRAM_BOT_TOKEN")

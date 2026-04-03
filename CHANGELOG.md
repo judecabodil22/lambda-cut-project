@@ -6,6 +6,67 @@ All notable changes to this project documented here.
 
 ---
 
+## 3.2.0 — 2026-04-03
+
+### New Features
+
+| Feature | Description |
+|---------|-------------|
+| Content Studio | New feature for generating additional content from existing transcripts |
+| `/cs` command | Opens Content Studio menu |
+| Import Pipeline Data | Moves all transcripts + shorts from pipeline to content_studio |
+| Generate Script | Analyzes ALL transcripts, generates ~1500 word script |
+| Generate TTS | Creates TTS audio from existing scripts |
+| Auto-detect | AI determines best content type, subject, and voice from transcript |
+| Full transcript reading | No truncation - reads entire transcript for better context |
+| Key plot points | Analysis extracts specific plot events for accurate script generation |
+| Game context | Uses GAME_TITLE from settings for context |
+
+### Content Studio Menu
+
+```
+📥 Import Pipeline Data  - Move pipeline transcripts + shorts to content_studio
+🎬 Generate Script       - Analyze transcripts, generate script (~1500 words)
+🎤 Generate TTS          - Generate TTS from latest script
+🗑️ Clear All            - Delete all content_studio files
+```
+
+### Technical Improvements
+
+| Improvement | Details |
+|-------------|---------|
+| Full transcript support | Removed 50k char and 8k char limits - reads entire transcript |
+| Real character extraction | AI returns list of actual characters in transcript |
+| Key plot points extraction | AI extracts specific plot events for script accuracy |
+| Script-only generation | Separated script generation from TTS |
+| TTS retry logic | Added retry with exponential backoff for 429/503 errors |
+| Game context in prompts | Includes GAME_TITLE setting in analysis and generation |
+
+### Script Accuracy Improvements
+
+| Change | Description |
+|--------|-------------|
+| Character restrictions | Script must only use characters from transcript |
+| Plot point enforcement | Script must cover extracted key plot points |
+| External knowledge banned | AI warned not to add story elements not in transcript |
+| Show detected info | Telegram shows detected characters and plot points before generation |
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| Import uses move | Changed from copy to move - files transfer from pipeline |
+| TTS retry on 503 | Added retry logic for service unavailable errors |
+| Full transcript context | Fixed truncation - now reads all ~42k characters |
+
+### Changes
+
+| Change | Details |
+|--------|---------|
+| Version bump | 3.2.0 |
+
+---
+
 ## 3.1.1 — 2026-04-02
 
 ### Bug Fixes
