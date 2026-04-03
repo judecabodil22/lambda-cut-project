@@ -6,6 +6,34 @@ All notable changes to this project documented here.
 
 ---
 
+## 3.2.1 — 2026-04-03
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| TTS API format | Fixed Content Studio TTS to use same API format as pipeline |
+| Script cleaning | Added script cleaning function to remove production notes before TTS |
+| Character relationship hallucination | AI now forbidden from inventing relationships between characters |
+| External knowledge | AI forbidden from adding plot details not in transcript |
+
+### New Features
+
+| Feature | Description |
+|---------|-------------|
+| Script cleaning for TTS | Removes stage directions, visual cues, formatting before TTS |
+| Character relationship restrictions | AI must not invent character connections not in transcript |
+
+### Content Studio Improvements
+
+| Improvement | Description |
+|-------------|-------------|
+| Script cleaning | Before TTS, removes: **(Stage directions)**, **(Visual cues)**, **Bold markers** |
+| Word count display | Shows cleaned word count before TTS generation |
+| Key plot points enforcement | Script must cover extracted plot points from transcript |
+
+---
+
 ## 3.2.0 — 2026-04-03
 
 ### New Features

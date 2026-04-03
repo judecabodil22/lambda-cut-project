@@ -723,6 +723,9 @@ CRITICAL RESTRICTIONS:
 - If you need to reference people, use generic terms like "a friend", "a character" or "the victim" instead of made-up names
 - ONLY write about these specific plot points from the transcript: {plot_points_str}
 - DO NOT include any plot details, character abilities, or story elements that are NOT mentioned in the transcript above
+- DO NOT invent relationships between characters - if the transcript doesn't explicitly state a connection between characters, do NOT imply or state that they have a relationship
+- DO NOT make up roles for characters (e.g., don't say "Chief Bank is leading the inquiry" unless explicitly stated in transcript)
+- Only describe characters and events that are explicitly mentioned in the transcript - do not infer or assume details not directly stated
 
 The script should:
 - Have a hook at the start to grab attention
@@ -800,15 +803,20 @@ def _cs_generate_tts(script, voice_style):
     audio_files = []
     
     for text_part, name in segments:
-        # Generate TTS
+        # Generate TTS using same format as pipeline
         voice_id = _get_voice_id(voice)
         if not voice_id:
             raise RuntimeError(f"Unknown voice: {voice}")
         
+        # Use same format as pipeline _tts_api function
+        text_with_style = text_part
+        
         body = json.dumps({
-            "input": {"text": text_part},
-            "voice": {"name": voice_id},
-            "audioConfig": {"speakingRate": 1.0, "pitch": 0}
+            "contents": [{"parts": [{"text": text_with_style}]}],
+            "generationConfig": {
+                "responseModalities": ["AUDIO"],
+                "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": voice_id}}}
+            }
         }).encode()
         
         keys = get_gemini_keys()
@@ -827,22 +835,34 @@ def _cs_generate_tts(script, voice_style):
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key={key}"
             req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
             
-            try:
-                with urllib.request.urlopen(req, timeout=120) as resp:
-                    r = json.loads(resp.read())
-                    audio = r["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
-                    with open(out_pcm, "wb") as f:
-                        f.write(base64.b64decode(audio))
-                    
-                    # Convert PCM to WAV
-                    subprocess.run(["ffmpeg", "-y", "-f", "s16le", "-ar", "24000", "-ac", "1", "-i", out_pcm, "-ar", "24000", "-ac", "1", out_wav], capture_output=True)
-                    os.remove(out_pcm)
-                    audio_files.append(out_wav)
-                    tts_success = True
+            for attempt in range(3):
+                try:
+                    with urllib.request.urlopen(req, timeout=120) as resp:
+                        r = json.loads(resp.read())
+                        audio = r["candidates"][0]["content"]["parts"][0]["inlineData"]["data"]
+                        with open(out_pcm, "wb") as f:
+                            f.write(base64.b64decode(audio))
+                        
+                        # Convert PCM to WAV
+                        subprocess.run(["ffmpeg", "-y", "-f", "s16le", "-ar", "24000", "-ac", "1", "-i", out_pcm, "-ar", "24000", "-ac", "1", out_wav], capture_output=True)
+                        os.remove(out_pcm)
+                        audio_files.append(out_wav)
+                        tts_success = True
+                        break
+                except urllib.error.HTTPError as e:
+                    if e.code == 429 and attempt < 2:
+                        wait = 30 * (2 ** attempt)
+                        log(f"Key ...{key[-6:]} rate limited, retry in {wait}s...")
+                        time.sleep(wait)
+                    else:
+                        log(f"TTS error with key ...{key[-6:]}: {e.code}")
+                        break
+                except Exception as e:
+                    log(f"TTS error with key ...{key[-6:]}: {e}")
                     break
-            except Exception as e:
-                log(f"TTS error with key ...{key[-6:]}: {e}")
-                continue
+            
+            if tts_success:
+                break
         
         if not tts_success:
             raise RuntimeError(f"TTS generation failed for segment: {name}")
@@ -948,6 +968,32 @@ def _cs_generate_script_only():
     tg_send(f"✅ Script generated!\n📝 Saved: {os.path.basename(script_file)}")
 
 
+def _cs_clean_script_for_tts(script):
+    """Remove production notes and stage directions from script for TTS."""
+    import re
+    
+    # Remove everything in parentheses (stage directions, visual cues)
+    cleaned = re.sub(r'\([^)]*\)', '', script)
+    
+    # Remove markdown bold/italic markers
+    cleaned = re.sub(r'\*\*', '', cleaned)
+    cleaned = re.sub(r'\*', '', cleaned)
+    
+    # Remove lines that are only stage directions or visual cues
+    lines = cleaned.split('\n')
+    spoken_lines = []
+    for line in lines:
+        line = line.strip()
+        # Skip empty lines and lines that are just visual cues
+        if not line:
+            continue
+        if line.lower().startswith('visual:') or line.lower().startswith('intro') or line.lower().startswith('outro'):
+            continue
+        spoken_lines.append(line)
+    
+    return '\n'.join(spoken_lines)
+
+
 def _cs_generate_tts_only():
     """Generate TTS from existing scripts."""
     scripts = sorted(glob.glob(os.path.join(CS_SCRIPTS_DIR, "*.txt")), key=os.path.getmtime, reverse=True)
@@ -957,9 +1003,13 @@ def _cs_generate_tts_only():
     
     latest_script = scripts[0]
     with open(latest_script) as f:
-        script = f.read()
+        original_script = f.read()
     
+    # Clean script for TTS - remove production notes
+    script = _cs_clean_script_for_tts(original_script)
+    word_count = len(script.split())
     tg_send(f"📄 Found script: {os.path.basename(latest_script)}")
+    tg_send(f"🧹 Cleaned script for TTS: {word_count} words")
     tg_send("🎤 Generating TTS audio...")
     
     try:
