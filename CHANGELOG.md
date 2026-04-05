@@ -2,7 +2,28 @@
 
 All notable changes to this project documented here.
 
-## [Unreleased]
+## 3.3.0 — 2026-04-05
+
+### New Features
+
+| Feature | Description |
+|---------|-------------|
+| SRT word wrapping for Phase 5 | TTS SRT files now split long subtitles into 10-word chunks with individual timestamps |
+| `/set_srt_words` command | Telegram command to set max words per SRT subtitle (3-20, default: 10) |
+
+### Bug Fixes
+
+| Fix | Details |
+|-----|---------|
+| SRT word wrapping | Phase 5 TTS now wraps to 10 words per line for better 9:16 video readability |
+| Phase 1 SRT cleanup | Removed word wrapping from Phase 1 (pipeline) - only Phase 5 uses it |
+
+### Technical Changes
+
+| Change | Description |
+|---------|-------------|
+| SRT splitting logic | Long subtitles now split into separate SRT entries with proportional timing |
+| Configurable SRT words | Uses SRT_MAX_WORDS from .env (default: 10), configurable via /set_srt_words |
 
 ---
 

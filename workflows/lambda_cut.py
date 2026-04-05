@@ -919,6 +919,20 @@ def _format_srt_time(seconds):
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
 
+def _wrap_text_for_srt(text, max_words=10):
+    """Wrap text to have max words per line for better SRT readability."""
+    if not text:
+        return text
+    words = text.split()
+    if len(words) <= max_words:
+        return text
+    
+    lines = []
+    for i in range(0, len(words), max_words):
+        lines.append(' '.join(words[i:i+max_words]))
+    return '\n'.join(lines)
+
+
 def _get_voice_id(voice_name):
     """Get Gemini TTS voice ID."""
     voices = {
@@ -1773,17 +1787,33 @@ def phase_tts(duration, num_hours):
             else:
                 log(f"   Generating SRT for tts_{padded}.wav...")
                 srt_out = os.path.splitext(wav)[0] + ".srt"
+                srt_max_words = int(env("SRT_MAX_WORDS", "10"))
                 try:
                     from faster_whisper import WhisperModel
                     model = WhisperModel("base", device="cpu", compute_type="int8")
                     segments, _ = model.transcribe(wav, language="en", vad_filter=True)
                     with open(srt_out, "w") as f:
-                        for idx, seg in enumerate(segments, 1):
+                        idx = 1
+                        for seg in segments:
                             start, end, text = seg.start, seg.end, seg.text.strip()
                             if text:
-                                f.write(f"{idx}\n")
-                                f.write(f"{int(start//3600):02d}:{int((start%3600)//60):02d}:{int(start%60):02d},000 --> {int(end//3600):02d}:{int((end%3600)//60):02d}:{int(end%60):02d},000\n")
-                                f.write(f"{text}\n\n")
+                                words = text.split()
+                                if len(words) <= srt_max_words:
+                                    f.write(f"{idx}\n")
+                                    f.write(f"{int(start//3600):02d}:{int((start%3600)//60):02d}:{int(start%60):02d},000 --> {int(end//3600):02d}:{int((end%3600)//60):02d}:{int(end%60):02d},000\n")
+                                    f.write(f"{text}\n\n")
+                                    idx += 1
+                                else:
+                                    chunk_duration = (end - start) / ((len(words) + srt_max_words - 1) // srt_max_words)
+                                    for chunk_idx in range(0, len(words), srt_max_words):
+                                        chunk_words = words[chunk_idx:chunk_idx + srt_max_words]
+                                        chunk_text = ' '.join(chunk_words)
+                                        chunk_start = start + (chunk_idx // srt_max_words) * chunk_duration
+                                        chunk_end = chunk_start + chunk_duration
+                                        f.write(f"{idx}\n")
+                                        f.write(f"{int(chunk_start//3600):02d}:{int((chunk_start%3600)//60):02d}:{int(chunk_start%60):02d},000 --> {int(chunk_end//3600):02d}:{int((chunk_end%3600)//60):02d}:{int(chunk_end%60):02d},000\n")
+                                        f.write(f"{chunk_text}\n\n")
+                                        idx += 1
                     log(f"   tts_{padded}.srt created (faster-whisper)")
                 except Exception as e:
                     log_error(f"   SRT failed for tts_{padded}: {e}")
@@ -2142,6 +2172,21 @@ Example: /set_voice Vindemiatrix""")
             except ValueError:
                 tg_send("Invalid number. Use /set_clips 10")
 
+    elif cmd in ("/set_srt_words", "/setsrt"):
+        if not args:
+            current = env("SRT_MAX_WORDS", "10")
+            tg_send(f"Current SRT max words: {current}\nUsage: /set_srt_words 10")
+        else:
+            try:
+                words = int(args)
+                if words < 3 or words > 20:
+                    tg_send("SRT max words must be between 3 and 20.")
+                else:
+                    update_env_var("SRT_MAX_WORDS", str(words))
+                    tg_send(f"SRT max words set to: {words}")
+            except ValueError:
+                tg_send("Invalid number. Use /set_srt_words 10")
+
     elif cmd in ("/set_game", "/setgame"):
         if not args:
             current = env("GAME_TITLE", "")
@@ -2249,6 +2294,7 @@ Commands:
 /set_style         - Clear style
 /set_index 3      - Set playlist index (1=first video)
 /set_clips 10     - Set clips per hour (1-20)
+/set_srt_words 10 - Set SRT max words per line (default: 10)
 /set_game Title   - Set game title for scripts
 /set_game clear   - Clear game title
 
